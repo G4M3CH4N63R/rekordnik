@@ -1,0 +1,8 @@
+name = "rekordnik"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rekordnik"
+database_id = "SEM_PATRI_ID_Z_WRANGLER_D1_CREATE"

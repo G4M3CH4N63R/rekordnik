@@ -1,0 +1,1018 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rekordník</title>
+<meta name="theme-color" content="#12715A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rekordník">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Telefonní appka v jednom sloupci, dole lišta se čtyřmi záložkami, nahoře pruh jako čáry atletické dráhy */
+:root{
+  --bg:#F2F5F1; --surface:#FFFFFF; --ink:#15211B; --muted:#5A6A62; --line:#DAE2DC;
+  --accent:#12715A; --accent-soft:#E0F0E9; --on-accent:#FFFFFF;
+  --gold:#A87405; --gold-soft:#FBF0D3; --warn:#B0501A; --warn-soft:#FBE8DB;
+  --boys:#2D6CB0; --girls:#B8447A;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0E1412; --surface:#16201C; --ink:#E5EDE8; --muted:#93A39B; --line:#28342F;
+  --accent:#4CC39A; --accent-soft:#16392D; --on-accent:#08130F;
+  --gold:#E3B547; --gold-soft:#3A2E10; --warn:#F08A55; --warn-soft:#3C2116;
+  --boys:#7DB2EE; --girls:#EE8DB8; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink);margin:0}
+body{font-family:var(--body);font-size:16px;line-height:1.45;padding:env(safe-area-inset-top,0px) 16px 0;-webkit-text-size-adjust:100%}
+.app{max-width:560px;margin:0 auto;padding-bottom:110px}
+.num{font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+header.top{padding-block:14px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand b{font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:.02em;text-transform:uppercase}
+.brand span{color:var(--muted);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topr{display:flex;align-items:center;gap:8px}
+.syncdot{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.syncdot i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.syncdot.ok i{background:var(--accent)} .syncdot.err i{background:var(--warn)} .syncdot.busy i{background:var(--gold)}
+.iconbtn{all:unset;cursor:pointer;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--ink)}
+.iconbtn:focus-visible{outline:2px solid var(--accent)}
+.iconbtn[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+.iconbtn svg{width:24px;height:24px}
+.lanes{height:6px;background:repeating-linear-gradient(90deg,var(--accent) 0 28px,transparent 28px 34px);opacity:.85;border-radius:3px;margin-bottom:14px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1.05;margin:4px 0 12px}
+h2{font-family:var(--display);font-weight:600;font-size:20px;letter-spacing:.03em;text-transform:uppercase;margin:24px 0 10px;color:var(--muted)}
+p{margin:0 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 140px;min-width:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
+select,input[type=date],input[type=search],input[type=text],input[type=password],input[type=url]{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.panel+.panel{margin-top:10px}
+.recbar{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
+.recbar div{flex:1 1 120px}
+.k{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.v{font-family:var(--display);font-size:26px;font-weight:600;line-height:1.1}
+.hint{font-size:13px;color:var(--muted)}
+.err{color:var(--warn);font-weight:600}
+.list{display:flex;flex-direction:column;margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.kid{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 12px;padding:10px 14px;border-top:1px solid var(--line)}
+.kid:first-child{border-top:0}
+.kid .nm{font-weight:600;min-width:0}
+.kid .sub{font-size:13px;color:var(--muted)}
+.kid .chips{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.kid .chips:empty{display:none}
+.kid.isrec{background:var(--gold-soft)}
+.sx{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.sx.M{background:var(--boys)} .sx.F{background:var(--girls)}
+.inp{font:inherit;font-family:var(--display);font-size:24px;font-weight:600;width:112px;text-align:right;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
+.inp::placeholder{color:var(--muted);opacity:.5;font-weight:500}
+.chip{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
+.chip.pb{background:var(--accent-soft);color:var(--accent)}
+.chip.rec{background:var(--gold);color:var(--surface)}
+.chip.chk{background:var(--warn-soft);color:var(--warn)}
+.chip.first{background:var(--line);color:var(--muted)}
+.btn{font:inherit;font-weight:600;font-size:16px;border:0;border-radius:12px;padding:12px 18px;cursor:pointer;background:var(--accent);color:var(--on-accent)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.warn{background:var(--warn);color:#fff}
+.btn.small{font-size:14px;padding:8px 12px;border-radius:10px}
+.btn:disabled{opacity:.45;cursor:default}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.savebar{position:sticky;bottom:calc(84px + env(safe-area-inset-bottom,0px));margin-top:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.08);z-index:3}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
+nav.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+nav.tabs button{font:inherit;font-size:13px;font-weight:600;background:none;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:10px;cursor:pointer;position:relative}
+nav.tabs button svg{width:24px;height:24px}
+nav.tabs button[aria-current="page"]{color:var(--accent);background:var(--accent-soft)}
+.badge{position:absolute;top:2px;right:calc(50% - 22px);background:var(--gold);color:var(--surface);font-size:11px;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 4px}
+.kidbtn{all:unset;box-sizing:border-box;display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer}
+.kidbtn:first-child{border-top:0}
+.kidbtn:hover{background:var(--bg)}
+.kidbtn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.kidbtn .cl{font-family:var(--display);font-weight:600;color:var(--muted);font-size:18px;align-self:center}
+.back{all:unset;cursor:pointer;color:var(--accent);font-weight:600;font-size:15px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.dc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.dc .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.dc .t b{font-weight:600}
+.dc svg{width:100%;height:40px;display:block}
+.dc details summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600}
+.dc ul{list-style:none;margin:6px 0 0;padding:0;font-size:14px}
+.dc li{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid var(--line);align-items:center}
+.rank{font-size:13px;color:var(--accent);font-weight:600}
+.lb{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.lbr{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:9px 14px;border-top:1px solid var(--line)}
+.lbr:first-child{border-top:0}
+.pos{font-family:var(--display);font-size:20px;font-weight:700;color:var(--muted);text-align:center}
+.lbr.p1 .pos{color:var(--gold)}
+.lbr .val{font-family:var(--display);font-size:20px;font-weight:600}
+.up{color:var(--accent);font-weight:600}
+.strip svg{width:100%;height:auto;display:block}
+.empty{padding:18px 14px;color:var(--muted);font-size:15px}
+.rt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.rt th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line)}
+.rt td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.rt tr:last-child td{border-bottom:0}
+.rt td.rv{font-family:var(--display);font-size:19px;font-weight:600;white-space:nowrap}
+.rt td.rv .who{font-family:var(--body);font-size:12px;font-weight:500;color:var(--muted);white-space:normal}
+.rt td.rv.new{color:var(--gold)}
+.rt td.none{color:var(--muted);font-size:14px}
+.tw{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.gradechips{display:flex;gap:6px;flex-wrap:wrap}
+.gradechips button{font:inherit;font-family:var(--display);font-size:18px;font-weight:600;min-width:42px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.gradechips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.appr{background:var(--gold-soft);border:1px solid var(--gold);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.appr .big{font-family:var(--display);font-size:24px;font-weight:700}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:15px;z-index:9;max-width:calc(100% - 32px)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{font:inherit;font-size:15px;font-weight:600;border:0;background:none;color:var(--muted);padding:9px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.code{font-family:ui-monospace,Menlo,monospace;font-size:20px;font-weight:600;letter-spacing:.06em;background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;user-select:all;word-break:break-all}
+.upd{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));max-width:528px;margin:0 auto;background:var(--accent);color:var(--on-accent);border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:8;font-weight:600}
+.upd button{font:inherit;font-weight:700;border:0;background:var(--on-accent);color:var(--accent);border-radius:8px;padding:6px 12px;cursor:pointer}
+.ul{display:flex;flex-direction:column;gap:8px}
+.ul .u{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+@media (prefers-reduced-motion:no-preference){.toast{animation:pop .2s ease-out}@keyframes pop{from{opacity:0;transform:translate(-50%,8px)}}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><b>Rekordník</b><span id="kdo">TV · ZŠ Mendelova</span></div>
+    <div class="topr">
+      <span class="syncdot" id="syncdot" title="Synchronizace"><i></i><span id="synctext"></span></span>
+      <button class="iconbtn" id="btnNast" aria-label="Nastavení"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div>
+  </header>
+  <div class="lanes" aria-hidden="true"></div>
+  <main id="main"></main>
+</div>
+<nav class="tabs" aria-label="Hlavní menu" id="nav"><div class="in" id="tabs"></div></nav>
+<div class="toast" id="toast" hidden></div>
+<div class="upd" id="upd" hidden><span>Je k dispozici nová verze.</span><button id="updBtn">Načíst</button></div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   Rekordník · společná evidence výkonů v TV, ZŠ Mendelova
+   Verze se zvyšuje spolu s CACHE v sw.js.
+   ========================================================================== */
+const VERZE = "1.0.0";
+// Adresa Workeru po nasazení. Prázdná = zadává se v Nastavení.
+const VYCHOZI_SERVER = "https://rekordnik.chuanito-bonito.workers.dev";
+
+/* ---------- disciplíny (dohoda kolektivu 13. 10. 2026) ---------- */
+const DISC = {
+  d60:{n:"60 m",u:"s",low:true,min:6,max:20},
+  d200:{n:"200 m",u:"s",low:true,min:22,max:80},
+  d400:{n:"400 m",u:"min",low:true,min:50,max:200},
+  d500:{n:"500 m",u:"min",low:true,min:70,max:260},
+  d1000:{n:"1000 m",u:"min",low:true,min:150,max:600},
+  zm:{n:"Skok z místa",u:"cm",low:false,min:50,max:350},
+  dal:{n:"Skok daleký",u:"cm",low:false,min:100,max:700},
+  vys:{n:"Skok vysoký",u:"cm",low:false,min:50,max:220},
+  rak:{n:"Hod raketkou",u:"m",low:false,min:2,max:90},
+  kou:{n:"Vrh koulí",u:"m",low:false,min:1,max:20},
+  spl:{n:"Šplh",u:"s",low:true,min:2,max:40},
+  mic:{n:"Hod míčkem (do 2025/26)",u:"m",low:false,min:2,max:90,stara:true}
+};
+const PET="Vrh petanque koulí", K3="Vrh koulí 3 kg", K34="Vrh koulí (holky 3 kg, kluci 4 kg)";
+const NAME_OVR={1:{spl:"Šplh 1/2 tyče",kou:PET},2:{kou:PET},3:{kou:PET},4:{kou:PET},5:{kou:PET},6:{kou:K3},7:{kou:K3},8:{kou:K34},9:{kou:K34}};
+const dn=(d,g)=>(NAME_OVR[g]&&NAME_OVR[g][d])||DISC[d].n;
+const GD={};
+for(let g=1;g<=9;g++){
+  GD[g]=["d60","d200","d400",(g>=2&&g<=4)?"d500":"d1000","zm","dal","vys","rak","kou","spl"];
+}
+const better=(a,b,d)=>DISC[d].low?a<b:a>b;
+
+/* ---------- pomocné ---------- */
+const $=(s,el=document)=>el.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const cz=n=>String(n).replace(".",",");
+const plural=(n,a,b,c)=>n===1?a:(n>=2&&n<=4?b:c);
+const dnes=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+const datum=iso=>{if(!iso)return "";const [y,m,d]=iso.split("-");return (+d)+". "+(+m)+". "+y;};
+const skolniRok=iso=>{const y=+iso.slice(0,4),m=+iso.slice(5,7);return m>=9?y:y-1;};
+const syLabel=sy=>sy+"/"+String(sy+1).slice(2);
+const pololeti=iso=>{const m=+iso.slice(5,7);return (m>=9||m===1)?"podzim":"jaro";};
+const uid=p=>p+"_"+[...crypto.getRandomValues(new Uint8Array(8))].map(x=>x.toString(16).padStart(2,"0")).join("");
+function rnd(v,u){return u==="s"||u==="m"?Math.round(v*100)/100:u==="min"?Math.round(v*10)/10:Math.round(v);}
+function fmt(v,u){
+  if(v==null||isNaN(v)) return "";
+  if(u==="s") return cz(v.toFixed(2))+" s";
+  if(u==="m") return cz(v.toFixed(2))+" m";
+  if(u==="cm") return Math.round(v)+" cm";
+  const m=Math.floor(v/60),s=v-m*60;return m+":"+cz(s.toFixed(1).padStart(4,"0"))+" min";
+}
+function parseVal(str,d){
+  if(str==null||!String(str).trim()) return null;
+  let t=String(str).trim().replace(/\s*(min|cm|s|m)\.?$/i,"").replace(/,/g,".").replace(/\s+/g,"");
+  let v;
+  if(t.includes(":")){const p=t.split(":");v=(+p[0])*60+(+p[1]);} else v=+t;
+  if(!isFinite(v)||v<=0) return NaN;
+  if(DISC[d].u==="cm"&&v<10) v=v*100;
+  return rnd(v,DISC[d].u);
+}
+const PH={s:"8,45",min:"1:13,5",cm:"185",m:"24,50"};
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2800);}
+const b64=u8=>{let s="";u8.forEach(b=>s+=String.fromCharCode(b));return btoa(s);};
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+
+/* ---------- IndexedDB ---------- */
+const DBNAME="rekordnik", DBVER=1;
+const STORES=["meta","zaci","vykony","rekordy","sys","fronta"];
+let _db;
+function dbOpen(){
+  return new Promise((ok,ko)=>{
+    const r=indexedDB.open(DBNAME,DBVER);
+    r.onupgradeneeded=()=>{const db=r.result;for(const s of STORES) if(!db.objectStoreNames.contains(s)) db.createObjectStore(s,{keyPath:s==="meta"?"k":"id"});};
+    r.onsuccess=()=>{_db=r.result;ok(_db);};
+    r.onerror=()=>ko(r.error);
+  });
+}
+function tx(store,mode,fn){
+  return new Promise((ok,ko)=>{
+    const t=_db.transaction(store,mode);const st=t.objectStore(store);let res;
+    const r=fn(st); if(r&&"onsuccess" in r) r.onsuccess=()=>{res=r.result;};
+    t.oncomplete=()=>ok(res); t.onerror=()=>ko(t.error); t.onabort=()=>ko(t.error);
+  });
+}
+const dbAll=s=>tx(s,"readonly",st=>st.getAll());
+const dbGet=(s,k)=>tx(s,"readonly",st=>st.get(k));
+const dbPut=(s,v)=>tx(s,"readwrite",st=>st.put(v));
+const dbDel=(s,k)=>tx(s,"readwrite",st=>st.delete(k));
+const dbClear=s=>tx(s,"readwrite",st=>st.clear());
+function dbPutMany(s,list){return new Promise((ok,ko)=>{const t=_db.transaction(s,"readwrite");const st=t.objectStore(s);for(const v of list) st.put(v);t.oncomplete=()=>ok();t.onerror=()=>ko(t.error);});}
+const metaGet=async k=>{const r=await dbGet("meta",k);return r?r.v:undefined;};
+const metaSet=(k,v)=>dbPut("meta",{k,v});
+
+/* ---------- šifrování (heslo kolektivu) ---------- */
+let KEY=null;
+async function odvodKlic(heslo,sulB64){
+  const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(heslo),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt:unb64(sulB64),iterations:250000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+}
+async function zasifruj(obj,key=KEY){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(JSON.stringify(obj))));
+  const out=new Uint8Array(12+ct.length);out.set(iv);out.set(ct,12);return b64(out);
+}
+async function rozsifruj(s,key=KEY){
+  const u=unb64(s);const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:u.slice(0,12)},key,u.slice(12));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+const KONTROLA="rekordnik-ok";
+
+/* ---------- stav v paměti ---------- */
+const S={
+  tab:"mereni", ja:null, server:"", kod:"", syncStav:"", syncChyba:"",
+  zaci:new Map(),       // id -> {id,j,p,pis,coh,sex,akt}
+  rawZaci:[],           // záznamy, které ještě nejdou rozšifrovat
+  vykony:new Map(),     // id -> {...}
+  rekordy:new Map(),    // "g|d|sex" -> {..., jm}
+  sys:new Map(),
+  mer:{cls:"",d:"d60",date:dnes(),inp:{},ok:new Set()},
+  zaci_ui:{q:"",cls:"",kid:null,stari:false},
+  pre:{g:6,sex:"M",d:"d60",sy:skolniRok(dnes())},
+  rek:{g:6},
+  sprava:{ucitele:null,novyKod:null}
+};
+const SY_NOW=()=>skolniRok(dnes());
+const rocnik=(z,sy=SY_NOW())=>sy-z.coh+1;
+const trida=(z,sy=SY_NOW())=>{const g=rocnik(z,sy);return g>=1&&g<=9?g+"."+z.pis:null;};
+const jmeno=z=>z?(z.j+" "+z.p):"neznámý žák";
+const byName=(a,b)=>a.p.localeCompare(b.p,"cs")||a.j.localeCompare(b.j,"cs");
+function recOf(g,d,sex){return S.rekordy.get(g+"|"+d+"|"+sex)||null;}
+function vykonyZaka(id,d){const out=[];for(const v of S.vykony.values()) if(v.z===id&&(!d||v.d===d)) out.push(v);return out.sort((a,b)=>a.datum.localeCompare(b.datum)||(a.t||0)-(b.t||0));}
+function best(list,d){let b=null;for(const v of list) if(!b||better(v.v,b.v,d)) b=v;return b;}
+
+async function nactiPamet(){
+  S.vykony=new Map((await dbAll("vykony")).filter(x=>x.data).map(x=>[x.rid,{...x.data,id:x.rid}]));
+  S.sys=new Map((await dbAll("sys")).filter(x=>x.data).map(x=>[x.rid,x.data]));
+  await rozsifrujVse();
+}
+async function rozsifrujVse(){
+  S.zaci=new Map(); S.rekordy=new Map(); S.rawZaci=[];
+  const zr=(await dbAll("zaci")).filter(x=>x.data);
+  const rr=(await dbAll("rekordy")).filter(x=>x.data);
+  for(const x of zr){
+    if(!KEY){S.rawZaci.push(x);continue;}
+    try{S.zaci.set(x.rid,{...(await rozsifruj(x.data.enc)),id:x.rid});}catch(e){S.rawZaci.push(x);}
+  }
+  for(const x of rr){
+    const r={...x.data};
+    if(r.enc&&KEY){try{r.jm=(await rozsifruj(r.enc)).jm;}catch(e){r.jm="?";}}
+    S.rekordy.set(x.rid,r);
+  }
+}
+
+/* ---------- synchronizace ---------- */
+async function zapis(store,rid,data){
+  const t=Date.now();
+  const id=store+"|"+rid;
+  await dbPut(store,{id:rid,rid,data,updatedAt:t});
+  await dbPut("fronta",{id,store,rid,data,updatedAt:t});
+  naplanujSync(2500);
+}
+async function api(cesta,telo,metoda){
+  const r=await fetch(S.server.replace(/\/+$/,"")+cesta,{method:metoda||(telo?"POST":"GET"),headers:{"authorization":"Bearer "+S.kod,"content-type":"application/json"},body:telo?JSON.stringify(telo):undefined,cache:"no-store"});
+  const j=await r.json().catch(()=>({chyba:"HTTP "+r.status}));
+  if(!r.ok||j.chyba){const e=new Error(j.chyba||("HTTP "+r.status));e.status=r.status;throw e;}
+  return j;
+}
+let _syncT=null,_syncBezi=false,_syncZnovu=false;
+function naplanujSync(ms){clearTimeout(_syncT);_syncT=setTimeout(syncNow,ms);}
+function nastavSyncStav(s,chyba){S.syncStav=s;S.syncChyba=chyba||"";const el=$("#syncdot");el.className="syncdot "+(s==="ok"?"ok":s==="err"?"err":s==="busy"?"busy":"");$("#synctext").textContent=s==="err"?"offline":s==="busy"?"…":"";el.title=chyba||"Synchronizace";}
+async function syncNow(){
+  if(!S.server||!S.kod) return;
+  if(_syncBezi){_syncZnovu=true;return;}
+  _syncBezi=true; nastavSyncStav("busy");
+  let zmenaSys=false, prislo=0;
+  try{
+    for(let kolo=0;kolo<40;kolo++){
+      const od=(await metaGet("kurzor"))||0;
+      let fronta=(await dbAll("fronta"));
+      // Šifrované věci se neposílají, dokud není klíč (bez klíče je ani nejde vytvořit).
+      fronta=fronta.slice(0,300);
+      const res=await api("/sync",{od,zmeny:fronta.map(f=>({store:f.store,rid:f.rid,data:f.data,updatedAt:f.updatedAt}))});
+      for(const f of fronta){const now=await dbGet("fronta",f.id);if(now&&now.updatedAt===f.updatedAt) await dbDel("fronta",f.id);}
+      if(res.odmitnuto&&res.odmitnuto.length){await metaSet("kurzor",0);toast("Server odmítl "+res.odmitnuto.length+" změn, data se načtou znovu.");}
+      for(const z of res.zmeny){
+        const loc=await dbGet(z.store,z.rid);
+        const vFronte=await dbGet("fronta",z.store+"|"+z.rid);
+        if(vFronte&&vFronte.updatedAt>z.updatedAt) continue;
+        if(loc&&loc.updatedAt>z.updatedAt&&!(res.odmitnuto||[]).includes(z.store+"|"+z.rid)) continue;
+        await dbPut(z.store,{id:z.rid,rid:z.rid,data:z.data,updatedAt:z.updatedAt});
+        if(z.store==="sys") zmenaSys=true;
+        prislo++;
+      }
+      await metaSet("kurzor",(res.odmitnuto&&res.odmitnuto.length)?0:res.verze);
+      const zbyva=(await dbAll("fronta")).length;
+      if(!res.vic&&!zbyva&&!(res.odmitnuto&&res.odmitnuto.length)) break;
+      if(res.odmitnuto&&res.odmitnuto.length&&kolo>3) break;
+    }
+    await metaSet("posledniSync",Date.now());
+    nastavSyncStav("ok");
+    if(prislo){
+      await nactiPamet();
+      if(zmenaSys&&!KEY) await zkusOdemknout();
+      if(!jeVPsani()) render();
+      renderTabs();
+    }
+  }catch(e){
+    nastavSyncStav("err",e.message);
+    if(e.status===401){S.ja=null;render();}
+  }finally{
+    _syncBezi=false;
+    if(_syncZnovu){_syncZnovu=false;naplanujSync(500);}
+  }
+}
+function jeVPsani(){const a=document.activeElement;return a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA")&&$("#main").contains(a);}
+
+async function zkusOdemknout(){
+  const heslo=await metaGet("heslo");
+  const sul=S.sys.get("sul"), kontrola=S.sys.get("kontrola");
+  if(!heslo||!sul||!kontrola) return false;
+  try{
+    const k=await odvodKlic(heslo,sul.sul);
+    const t=await rozsifruj(kontrola.enc,k);
+    if(t!==KONTROLA) throw new Error();
+    KEY=k; await rozsifrujVse(); return true;
+  }catch(e){KEY=null;return false;}
+}
+
+/* ---------- start ---------- */
+async function start(){
+  await dbOpen();
+  S.server=(await metaGet("server"))||VYCHOZI_SERVER;
+  S.kod=(await metaGet("kod"))||"";
+  S.ja=(await metaGet("ja"))||null;
+  const pref=await metaGet("prefs"); if(pref){Object.assign(S.mer,{cls:pref.cls||"",d:pref.d||"d60"});}
+  await nactiPamet();
+  await zkusOdemknout();
+  if(!S.ja||!KEY) S.tab="nastaveni";
+  renderTabs(); render();
+  if(S.server&&S.kod){
+    api("/ja").then(async ja=>{S.ja={id:ja.id,jmeno:ja.jmeno,spravce:ja.spravce};await metaSet("ja",S.ja);renderKdo();}).catch(e=>{if(e.status===401){S.ja=null;metaSet("ja",null);render();}});
+    syncNow();
+  }
+  renderKdo();
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){syncNow();regUpdate();}});
+  addEventListener("online",()=>syncNow());
+  setInterval(()=>{if(document.visibilityState==="visible") syncNow();},60000);
+}
+function renderKdo(){$("#kdo").textContent=S.ja?S.ja.jmeno:"TV · ZŠ Mendelova";}
+
+/* ---------- vyhodnocení výkonu ---------- */
+function evalVal(z,d,v,g,potvrzeno){
+  if(v==null) return null; if(isNaN(v)) return {c:"chk",t:"Nečitelný výkon",necitelny:true};
+  const D=DISC[d];
+  const r=recOf(g,d,z.sex);
+  if(!potvrzeno){
+    if(v<D.min||v>D.max) return {c:"chk",t:"Zkontroluj výkon"};
+    if(r&&r.v!=null&&(D.low? v<r.v*0.85 : v>r.v*1.15)) return {c:"chk",t:"Zkontroluj, je to daleko za rekordem"};
+  }
+  if(r&&r.v!=null&&better(v,r.v,d)) return {c:"rec",t:"Nový školní rekord"};
+  const pb=best(vykonyZaka(z.id,d),d);
+  if(!pb) return {c:"first",t:"První měření"};
+  if(better(v,pb.v,d)) return {c:"pb",t:"Osobní rekord"};
+  return null;
+}
+
+/* ---------- Měření ---------- */
+function tridyAktivni(){
+  const set=new Set();for(const z of S.zaci.values()) if(z.akt!==false){const t=trida(z);if(t) set.add(t);}
+  return [...set].sort((a,b)=>parseInt(a)-parseInt(b)||a.localeCompare(b,"cs"));
+}
+function chipsHtml(z,ev){
+  if(!ev) return "";
+  const r=recOf(rocnik(z),S.mer.d,z.sex);
+  if(ev.c==="chk"&&!ev.necitelny) return `<span class="chip chk">${ev.t}</span><button class="btn small ghost" data-okv="${z.id}">Je to správně</button>`;
+  return `<span class="chip ${ev.c}">${ev.t}</span>`+(ev.c==="rec"?`<span class="hint">dosavadní rekord ${fmt(r.v,DISC[S.mer.d].u)}, půjde ke schválení</span>`:"");
+}
+function zaciTridy(cls){return [...S.zaci.values()].filter(z=>z.akt!==false&&trida(z)===cls).sort(byName);}
+function filledCount(){let n=0;for(const z of zaciTridy(S.mer.cls)){const v=parseVal(S.mer.inp[z.id]||"",S.mer.d);if(v!=null&&!isNaN(v))n++;}return n;}
+function renderMereni(){
+  const st=S.mer; const tridy=tridyAktivni();
+  if(!tridy.length){$("#main").innerHTML=`<h1>Měření</h1><div class="panel"><p>Zatím tu nejsou žádní žáci.</p><p class="hint">${S.ja&&S.ja.spravce?"Nahraj seznam žáků v Nastavení, část Správa.":"Seznam žáků nahrává správce. Po jeho nahrání se tu objeví sám."}</p></div>`;return;}
+  if(!tridy.includes(st.cls)) st.cls=tridy[0];
+  const g=parseInt(st.cls); if(!GD[g].includes(st.d)) st.d=GD[g][0];
+  const D=DISC[st.d]; const kids=zaciTridy(st.cls);
+  const rM=recOf(g,st.d,"M"), rF=recOf(g,st.d,"F");
+  let filled=0;
+  const rows=kids.map(z=>{
+    const raw=st.inp[z.id]||""; const v=parseVal(raw,st.d); if(v!=null&&!isNaN(v)) filled++;
+    const ev=evalVal(z,st.d,v,g,st.ok.has(z.id)); const pb=best(vykonyZaka(z.id,st.d),st.d);
+    return `<div class="kid${ev&&ev.c==="rec"?" isrec":""}" id="row-${z.id}">
+      <div><div class="nm"><span class="sx ${z.sex}"></span>${esc(jmeno(z))}</div>
+      <div class="sub num">${pb?"osobní rekord "+fmt(pb.v,D.u)+(pb.g!==g?" ("+pb.g+". tř.)":""):"zatím bez měření"}</div></div>
+      <input class="inp" id="in-${z.id}" data-kid="${z.id}" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="${PH[D.u]}" value="${esc(raw)}" aria-label="Výkon: ${esc(jmeno(z))}">
+      <div class="chips" id="ch-${z.id}">${chipsHtml(z,ev)}</div></div>`;}).join("");
+  const recTxt=r=>r?`${fmt(r.v,D.u)}`:`<span class="hint">bez rekordu</span>`;
+  $("#main").innerHTML=`
+    <h1>Měření</h1>
+    <div class="row">
+      <label class="f">Třída<select id="m-cls">${tridy.map(t=>`<option${t===st.cls?" selected":""}>${t}</option>`).join("")}</select></label>
+      <label class="f">Disciplína<select id="m-d">${GD[g].map(d=>`<option value="${d}"${d===st.d?" selected":""}>${esc(dn(d,g))}</option>`).join("")}</select></label>
+      <label class="f">Datum<input type="date" id="m-date" value="${st.date}" max="${dnes()}"></label>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <div class="k">Školní rekord ${g}. ročníku · ${esc(dn(st.d,g))}</div>
+      <div class="recbar"><div><div class="hint"><span class="sx M"></span>kluci</div><div class="v num">${recTxt(rM)}</div></div>
+      <div><div class="hint"><span class="sx F"></span>holky</div><div class="v num">${recTxt(rF)}</div></div></div>
+      <div class="hint" style="margin-top:6px">${D.low?"Lepší je menší čas.":"Lepší je větší hodnota."} ${D.u==="min"?"Zapisuj jako minuty:sekundy, třeba 1:13,5.":D.u==="cm"?"Zapisuj v centimetrech, 2,05 appka převede na 205 cm.":""}</div>
+    </div>
+    <div class="list">${rows||'<div class="empty">Ve třídě nejsou žáci.</div>'}</div>
+    <div class="savebar"><span class="hint num" id="m-cnt">${filled} ${plural(filled,"výkon","výkony","výkonů")} k uložení</span><button class="btn" id="m-save"${filled?"":" disabled"}>Uložit</button></div>`;
+}
+function updateRow(id){
+  const z=S.zaci.get(id), g=parseInt(S.mer.cls), v=parseVal(S.mer.inp[id]||"",S.mer.d), ev=evalVal(z,S.mer.d,v,g,S.mer.ok.has(id));
+  $("#ch-"+id).innerHTML=chipsHtml(z,ev);
+  $("#row-"+id).classList.toggle("isrec",!!(ev&&ev.c==="rec"));
+  const n=filledCount(); $("#m-cnt").textContent=`${n} ${plural(n,"výkon","výkony","výkonů")} k uložení`; $("#m-save").disabled=!n;
+}
+async function saveMereni(){
+  const st=S.mer, g=parseInt(st.cls); let n=0,recs=0,chk=0;
+  const sy=skolniRok(st.date);
+  for(const z of zaciTridy(st.cls)){
+    const v=parseVal(st.inp[z.id]||"",st.d); if(v==null) continue;
+    const ev=evalVal(z,st.d,v,g,st.ok.has(z.id));
+    if(isNaN(v)||(ev&&ev.c==="chk")){chk++;continue;}
+    if(ev&&ev.c==="rec") recs++;
+    const id=uid("v");
+    const data={z:z.id,d:st.d,v,g:sy-z.coh+1,tr:(sy-z.coh+1)+"."+z.pis,sex:z.sex,datum:st.date,t:Date.now()};
+    await zapis("vykony",id,data); S.vykony.set(id,{...data,id,autor:S.ja&&S.ja.jmeno,autorId:S.ja&&S.ja.id});
+    delete st.inp[z.id]; st.ok.delete(z.id); n++;
+  }
+  renderTabs(); render();
+  toast(`Uloženo: ${n} ${plural(n,"výkon","výkony","výkonů")}`+(recs?`, ${recs} ${plural(recs,"rekord čeká","rekordy čekají","rekordů čeká")} na schválení`:"")+(chk?`. ${chk} ${plural(chk,"výkon zůstal","výkony zůstaly","výkonů zůstalo")} v poli ke kontrole.`:""));
+}
+
+/* ---------- Žáci ---------- */
+function spark(vals,low){
+  if(vals.length<2) return "";
+  const W=200,H=40,p=5; let mn=Math.min(...vals),mx=Math.max(...vals); if(mx===mn){mx+=1;mn-=1;}
+  const pts=vals.map((v,i)=>{const x=p+i*(W-2*p)/(vals.length-1);let r=(v-mn)/(mx-mn);if(low) r=1-r;return [x,H-p-r*(H-2*p)];});
+  const L=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="${W}" y1="${H-1}" y2="${H-1}" stroke="var(--line)"/><polyline points="${pts.map(q=>q.join(",")).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/><circle cx="${L[0]}" cy="${L[1]}" r="3.5" fill="var(--accent)"/></svg>`;
+}
+function rankIn(z,d){
+  const sy=SY_NOW(), g=rocnik(z);
+  const per=new Map();
+  for(const v of S.vykony.values()) if(v.d===d&&v.g===g&&v.sex===z.sex&&skolniRok(v.datum)===sy){const b=per.get(v.z);if(!b||better(v.v,b.v,d)) per.set(v.z,v);}
+  if(!per.has(z.id)) return null;
+  const arr=[...per.values()].sort((a,b)=>DISC[d].low?a.v-b.v:b.v-a.v);
+  return {pos:arr.findIndex(x=>x.z===z.id)+1,n:arr.length};
+}
+const smiMenit=v=>S.ja&&(S.ja.spravce||v.autorId===S.ja.id||!v.autorId);
+function renderZaci(){
+  const st=S.zaci_ui;
+  if(st.kid&&S.zaci.get(st.kid)){
+    const z=S.zaci.get(st.kid);
+    const discs=Object.keys(DISC).filter(d=>[...S.vykony.values()].some(v=>v.z===z.id&&v.d===d));
+    const cards=discs.map(d=>{
+      const all=vykonyZaka(z.id,d), b=best(all,d), last=all[all.length-1], r=rankIn(z,d), D=DISC[d];
+      const items=all.slice().reverse().map(v=>`<li><span class="num">${fmt(v.v,D.u)} <span class="hint">${datum(v.datum)}, ${esc(v.tr||"")}${v.autor?", "+esc(v.autor):""}</span></span>${smiMenit(v)?`<button class="btn small ghost" data-delv="${v.id}">Smazat</button>`:""}</li>`).join("");
+      return `<div class="dc"><div class="t"><b>${esc(DISC[d].n)}</b><span class="hint num">${all.length} ${plural(all.length,"měření","měření","měření")}</span></div>
+        <div class="t"><span><span class="k">Osobní rekord</span><div class="v num">${fmt(b.v,D.u)}</div></span><span class="hint num" style="text-align:right">v ${b.g}. třídě<br>${datum(b.datum)}</span></div>
+        ${spark(all.map(v=>v.v),D.low)}
+        <div class="hint num">Naposledy ${fmt(last.v,D.u)}, ${datum(last.datum)}</div>
+        ${r?`<div class="rank num">${r.pos}. z ${r.n} ${z.sex==="M"?"kluků":"holek"} v ročníku letos</div>`:""}
+        <details><summary>Všechna měření</summary><ul>${items}</ul></details></div>`;}).join("");
+    const t=trida(z);
+    $("#main").innerHTML=`<button class="back" id="z-back">‹ Zpět na seznam</button>
+      <h1 style="margin-top:10px"><span class="sx ${z.sex}" style="width:12px;height:12px"></span>${esc(jmeno(z))}</h1>
+      <p class="hint">${t?t:"už nechodí do školy"} · křivka nahoru znamená zlepšení
+      ${S.ja&&S.ja.spravce?` · <button class="back" data-sex="${z.id}">${z.sex==="M"?"změnit na dívku":"změnit na chlapce"}</button>`:""}</p>
+      <div class="cards">${cards||'<div class="panel">Zatím žádné měření.</div>'}</div>`;
+    return;
+  }
+  const q=st.q.trim().toLocaleLowerCase("cs");
+  const list=[...S.zaci.values()].filter(z=>(st.stari||z.akt!==false)&&(!st.cls||trida(z)===st.cls)&&(!q||jmeno(z).toLocaleLowerCase("cs").includes(q)))
+    .sort((a,b)=>(rocnik(a)-rocnik(b))||String(a.pis).localeCompare(String(b.pis))||byName(a,b));
+  const pocty=new Map();for(const v of S.vykony.values()) pocty.set(v.z,(pocty.get(v.z)||0)+1);
+  $("#main").innerHTML=`<h1>Žáci</h1>
+    <div class="row"><label class="f">Hledat jméno<input type="search" id="z-q" value="${esc(st.q)}" placeholder="třeba Eliška"></label>
+    <label class="f">Třída<select id="z-cls"><option value="">Všechny třídy</option>${tridyAktivni().map(c=>`<option${c===st.cls?" selected":""}>${c}</option>`).join("")}</select></label></div>
+    <p class="hint" style="margin-top:8px">${list.length} ${plural(list.length,"žák","žáci","žáků")} · <label><input type="checkbox" id="z-stari"${st.stari?" checked":""}> i bývalí žáci</label></p>
+    <div class="list">${list.slice(0,80).map(z=>{const n=pocty.get(z.id)||0;return `<button class="kidbtn" data-open="${z.id}"><span><span class="nm"><span class="sx ${z.sex}"></span>${esc(jmeno(z))}</span><br><span class="hint num">${n} ${plural(n,"zápis","zápisy","zápisů")}</span></span><span class="cl">${trida(z)||"bývalý"}</span></button>`;}).join("")||'<div class="empty">Nikoho takového nenacházím.</div>'}</div>
+    ${list.length>80?'<p class="hint">Zobrazeno prvních 80, zúži výběr třídou nebo jménem.</p>':""}`;
+}
+
+/* ---------- Přehledy ---------- */
+function strip(groups,d){
+  const D=DISC[d]; const vals=groups.flatMap(g=>g.vals); if(!vals.length) return "";
+  let mn=Math.min(...vals),mx=Math.max(...vals); const pad=(mx-mn)*0.08||1; mn-=pad; mx+=pad;
+  const W=340,L=42,Rr=10,rowH=50,H=groups.length*rowH+40;
+  const X=v=>{let r=(v-mn)/(mx-mn); if(D.low) r=1-r; return L+r*(W-L-Rr);};
+  const rows=groups.map((g,i)=>{const y=32+i*rowH; const mean=g.vals.reduce((a,b)=>a+b,0)/g.vals.length;
+    return `<text x="0" y="${y+5}" font-size="14" font-weight="600" fill="var(--ink)">${esc(g.name)}</text>
+      <line x1="${L}" x2="${W-Rr}" y1="${y}" y2="${y}" stroke="var(--line)"/>
+      ${g.vals.map(v=>`<circle cx="${X(v).toFixed(1)}" cy="${y}" r="5" fill="var(--accent)" fill-opacity=".45"/>`).join("")}
+      <line x1="${X(mean).toFixed(1)}" x2="${X(mean).toFixed(1)}" y1="${y-11}" y2="${y+11}" stroke="var(--ink)" stroke-width="2.5"/>
+      <text x="${Math.min(Math.max(X(mean),L+46),W-Rr-46).toFixed(1)}" y="${y-16}" font-size="12" text-anchor="middle" fill="var(--muted)">průměr ${fmt(rnd(mean,D.u),D.u)}</text>`;}).join("");
+  const yb=groups.length*rowH+26;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Rozložení výkonů podle tříd">${rows}
+    <text x="${L}" y="${yb}" font-size="12" fill="var(--muted)">${fmt(rnd(D.low?mx:mn,D.u),D.u)} horší</text>
+    <text x="${W-Rr}" y="${yb}" font-size="12" text-anchor="end" fill="var(--muted)">lepší ${fmt(rnd(D.low?mn:mx,D.u),D.u)}</text></svg>`;
+}
+function renderPrehledy(){
+  const st=S.pre; if(!GD[st.g].includes(st.d)) st.d=GD[st.g][0];
+  const D=DISC[st.d], g=st.g, sy=st.sy;
+  const roky=new Set([SY_NOW()]);for(const v of S.vykony.values()) roky.add(skolniRok(v.datum));
+  const vs=[...S.vykony.values()].filter(v=>v.d===st.d&&v.g===g&&v.sex===st.sex&&skolniRok(v.datum)===sy);
+  const per=new Map();for(const v of vs){const b=per.get(v.z);if(!b||better(v.v,b.v,st.d)) per.set(v.z,v);}
+  const data=[...per.values()].sort((a,b)=>D.low?a.v-b.v:b.v-a.v);
+  const r=recOf(g,st.d,st.sex);
+  const lb=data.slice(0,15).map((v,i)=>{const z=S.zaci.get(v.z);return `<div class="lbr${i===0?" p1":""}"><span class="pos num">${i+1}.</span><span><b>${esc(jmeno(z))}</b> <span class="hint">${esc(v.tr)}</span></span><span class="val num">${fmt(v.v,D.u)}</span></div>`;}).join("");
+  const imp=[];
+  const kids=new Set(vs.map(v=>v.z));
+  for(const id of kids){
+    const mine=vs.filter(v=>v.z===id);
+    const a=best(mine.filter(v=>pololeti(v.datum)==="podzim"),st.d), b=best(mine.filter(v=>pololeti(v.datum)==="jaro"),st.d);
+    if(!a||!b) continue;
+    imp.push({z:S.zaci.get(id),a,b,p:D.low?(a.v-b.v)/a.v:(b.v-a.v)/a.v,tr:a.tr});
+  }
+  imp.sort((x,y)=>y.p-x.p);
+  const impH=imp.length?imp.slice(0,8).map((o,i)=>`<div class="lbr${i===0?" p1":""}"><span class="pos num">${i+1}.</span><span><b>${esc(jmeno(o.z))}</b> <span class="hint">${esc(o.tr)}</span><br><span class="hint num">${fmt(o.a.v,D.u)} na podzim, ${fmt(o.b.v,D.u)} na jaře</span></span><span class="val num ${o.p>0?"up":""}">${o.p>0?"+":""}${cz((o.p*100).toFixed(1))} %</span></div>`).join("")
+    :`<div class="empty">Zlepšení se ukáže, až budou v tomhle školním roce měření z podzimu i z jara (od února).</div>`;
+  const tridyG=[...new Set(data.map(v=>v.tr))].sort();
+  const groups=tridyG.map(t=>({name:t,vals:data.filter(v=>v.tr===t).map(v=>v.v)}));
+  $("#main").innerHTML=`<h1>Přehledy</h1>
+    <div class="row">
+      <label class="f">Ročník<select id="p-g">${[1,2,3,4,5,6,7,8,9].map(x=>`<option value="${x}"${x===g?" selected":""}>${x}. třída</option>`).join("")}</select></label>
+      <label class="f">Disciplína<select id="p-d">${GD[g].map(d=>`<option value="${d}"${d===st.d?" selected":""}>${esc(dn(d,g))}</option>`).join("")}</select></label>
+      <label class="f">Školní rok<select id="p-sy">${[...roky].sort((a,b)=>b-a).map(y=>`<option value="${y}"${y===sy?" selected":""}>${syLabel(y)}</option>`).join("")}</select></label>
+    </div>
+    <div style="margin-top:10px" class="seg" role="group" aria-label="Pohlaví"><button data-psex="M" aria-pressed="${st.sex==="M"}">Kluci</button><button data-psex="F" aria-pressed="${st.sex==="F"}">Holky</button></div>
+    <h2>Pořadí ročníku</h2>
+    <p class="hint" style="margin-top:-4px">${esc(dn(st.d,g))}, ${st.sex==="M"?"kluci":"holky"}, ${g}. třída ve školním roce ${syLabel(sy)}, nejlepší výkon každého.${r?" Školní rekord "+fmt(r.v,D.u)+".":""}</p>
+    <div class="lb">${lb||'<div class="empty">Zatím nikdo nezměřen.</div>'}</div>
+    <h2>Nejvíc se zlepšili</h2>
+    <p class="hint" style="margin-top:-4px">Nejlepší výkon z jara proti nejlepšímu z podzimu (září až leden).</p>
+    <div class="lb">${impH}</div>
+    ${groups.length?`<h2>Třídy vedle sebe</h2><div class="panel strip">${strip(groups,st.d)}<p class="hint" style="margin:6px 0 0">Každá tečka je jeden žák, svislá čárka průměr třídy.</p></div>`:""}`;
+}
+
+/* ---------- Rekordy ---------- */
+function kandidati(){
+  // nejlepší neschválený výkon v každé kategorii, který je lepší než rekord
+  const best=new Map();
+  for(const v of S.vykony.values()){
+    if(v.zamitnuto||v.schvaleno||DISC[v.d].stara) continue;
+    const k=v.g+"|"+v.d+"|"+v.sex; const r=S.rekordy.get(k);
+    if(r&&r.vykon===v.id) continue;
+    if(r&&!better(v.v,r.v,v.d)) continue;
+    const b=best.get(k); if(!b||better(v.v,b.v,v.d)) best.set(k,v);
+  }
+  return [...best.values()].sort((a,b)=>b.datum.localeCompare(a.datum));
+}
+function radekNastenka(v,z){return `Nový rekord: ${jmeno(z)}, ${v.tr}, ${dn(v.d,v.g)}, ${fmt(v.v,DISC[v.d].u)}, ${datum(v.datum)}`;}
+function renderRekordy(){
+  const g=S.rek.g; const spr=S.ja&&S.ja.spravce;
+  const pend=kandidati().map(v=>{const z=S.zaci.get(v.z),D=DISC[v.d],r=recOf(v.g,v.d,v.sex);return `<div class="appr">
+    <div class="k">${r?"Nový rekord ke schválení":"První rekord v kategorii ke schválení"}</div>
+    <div class="big num">${esc(dn(v.d,v.g))} ${fmt(v.v,D.u)}</div>
+    <div><b>${esc(jmeno(z))}</b> (${esc(v.tr)}), ${v.sex==="M"?"kluci":"holky"} ${v.g}. ročníku. ${r?"Dosavadní rekord "+fmt(r.v,D.u)+(r.jm?", "+esc(r.jm):"")+".":"Zatím bez rekordu."}</div>
+    <div class="hint">Zapsal${v.autor?" "+esc(v.autor):"o"}, ${datum(v.datum)}</div>
+    ${spr?`<div class="btns"><button class="btn small" data-appr="${v.id}">Schválit</button><button class="btn small ghost" data-rej="${v.id}">Zamítnout</button></div>`:`<div class="hint">Čeká na schválení správcem.</div>`}</div>`;}).join("");
+  const posl=[...S.rekordy.values()].filter(r=>r.zdroj==="appka"&&r.dt&&(Date.now()-Date.parse(r.dt))<1000*86400*45).sort((a,b)=>b.dt.localeCompare(a.dt));
+  const poslH=spr&&posl.length?`<h2>Nové rekordy na nástěnku</h2><div class="panel"><p class="hint">Řádky pro zápis do Rekordmani.xlsx a Síně rekordů:</p>${posl.map(r=>{const v=S.vykony.get(r.vykon);const z=v&&S.zaci.get(v.z);return v&&z?`<p class="num">${esc(radekNastenka(v,z))}</p>`:"";}).join("")}<div class="btns"><button class="btn small ghost" id="r-copy">Zkopírovat řádky</button></div></div>`:"";
+  const rows=[...GD[g],...(S.rekordy.has(g+"|mic|M")||S.rekordy.has(g+"|mic|F")?["mic"]:[])].map(d=>{const D=DISC[d];const cell=sex=>{const r=recOf(g,d,sex);
+      if(!r) return `<td class="none">bez rekordu</td>`;
+      const nove=r.zdroj==="appka";
+      return `<td class="rv num${nove?" new":""}">${fmt(r.v,D.u)}<div class="who">${esc(r.jm||"")}${r.tr?", "+esc(r.tr):""}${r.dt?", "+esc(/^\d{4}-\d\d-\d\d$/.test(r.dt)?datum(r.dt):r.dt):""}</div></td>`;};
+    return `<tr><td>${esc(dn(d,g))}</td>${cell("M")}${cell("F")}</tr>`;}).join("");
+  const near=[];
+  for(const z of S.zaci.values()){ if(z.akt===false) continue; const gg=rocnik(z); if(!GD[gg]) continue;
+    for(const d of GD[gg]){ const b=best(vykonyZaka(z.id,d).filter(v=>v.g===gg),d); const r=recOf(gg,d,z.sex); if(!b||!r) continue;
+      const gap=DISC[d].low?(b.v-r.v)/r.v:(r.v-b.v)/r.v; if(gap>=0&&gap<0.05&&r.vykon!==b.id) near.push({z,d,b,r,gap,gg}); } }
+  near.sort((a,b)=>a.gap-b.gap);
+  const nearH=near.slice(0,10).map(o=>`<div class="lbr"><span class="pos num" style="font-size:15px">${cz((o.gap*100).toFixed(1))}&nbsp;%</span><span><b>${esc(jmeno(o.z))}</b> <span class="hint">${esc(trida(o.z))}</span><br><span class="hint num">${esc(dn(o.d,o.gg))}: ${fmt(o.b.v,DISC[o.d].u)}, rekord ${fmt(o.r.v,DISC[o.d].u)}</span></span><span></span></div>`).join("");
+  $("#main").innerHTML=`<h1>Rekordy</h1>
+    ${pend?`<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px">${pend}</div>`:""}
+    ${poslH}
+    <h2>Školní rekordy podle ročníku</h2>
+    <div class="gradechips" role="group" aria-label="Ročník">${[1,2,3,4,5,6,7,8,9].map(x=>`<button data-rg="${x}" aria-pressed="${x===g}">${x}.</button>`).join("")}</div>
+    <div class="tw" style="margin-top:10px"><table class="rt"><thead><tr><th>Disciplína</th><th><span class="sx M"></span>Kluci</th><th><span class="sx F"></span>Holky</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="hint" style="margin-top:8px">Štafeta zůstává jen na nástěnce, appka eviduje jednotlivce.</p>
+    <h2>Těsně pod rekordem</h2>
+    <p class="hint" style="margin-top:-4px">Současní žáci, kterým k rekordu ročníku chybí méně než 5 %.</p>
+    <div class="lb">${nearH||'<div class="empty">Zatím nikdo není tak blízko.</div>'}</div>`;
+}
+async function schvalit(vid){
+  const v=S.vykony.get(vid); const z=S.zaci.get(v.z); if(!v||!z||!KEY) return;
+  const k=v.g+"|"+v.d+"|"+v.sex;
+  const rec={g:v.g,d:v.d,sex:v.sex,v:v.v,z:v.z,enc:await zasifruj({jm:jmeno(z)}),tr:v.tr,dt:v.datum,zdroj:"appka",vykon:v.id};
+  await zapis("rekordy",k,rec); S.rekordy.set(k,{...rec,jm:jmeno(z)});
+  const nv={...v,schvaleno:true}; delete nv.id; await zapis("vykony",vid,nv); S.vykony.set(vid,{...nv,id:vid});
+  renderTabs(); render(); toast("Schváleno. Řádek pro nástěnku najdeš níž.");
+}
+async function zamitnout(vid){
+  const v=S.vykony.get(vid); if(!v) return; const nv={...v,zamitnuto:true}; delete nv.id;
+  await zapis("vykony",vid,nv); S.vykony.set(vid,{...nv,id:vid}); renderTabs(); render(); toast("Zamítnuto, výkon zůstává u žáka.");
+}
+
+/* ---------- Nastavení a správa ---------- */
+function renderNastaveni(){
+  const spr=S.ja&&S.ja.spravce;
+  const maSul=S.sys.has("sul");
+  let krok;
+  if(!S.ja){
+    krok=`<div class="panel"><h2 style="margin-top:0">Přihlášení</h2>
+      <p>Zadej osobní kód, který jsi dostal od správce.</p>
+      ${VYCHOZI_SERVER?"":`<label class="f" style="margin-bottom:10px">Adresa serveru<input type="url" id="n-server" value="${esc(S.server)}" placeholder="https://rekordnik.….workers.dev" autocomplete="off"></label>`}
+      <label class="f">Osobní kód<input type="text" id="n-kod" value="${esc(S.kod)}" placeholder="abcd-efgh-jkmn" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+      <div class="btns"><button class="btn" id="n-login">Přihlásit</button></div><p class="hint err" id="n-err"></p></div>`;
+  } else if(!KEY){
+    if(!maSul&&spr) krok=`<div class="panel"><h2 style="margin-top:0">Heslo kolektivu</h2>
+      <p>Jména žáků se šifrují společným heslem. Vymysli ho, zapiš si ho bokem a předej kolegům osobně. Když se ztratí, jména už nikdo nepřečte.</p>
+      <label class="f">Nové heslo kolektivu<input type="password" id="n-h1" autocomplete="new-password"></label>
+      <label class="f" style="margin-top:8px">Ještě jednou<input type="password" id="n-h2" autocomplete="new-password"></label>
+      <div class="btns"><button class="btn" id="n-zalozit">Založit heslo</button></div><p class="hint err" id="n-err"></p></div>`;
+    else if(!maSul) krok=`<div class="panel"><p>Přihlášení proběhlo. Správce zatím nenastavil heslo kolektivu, zkus to později.</p><div class="btns"><button class="btn ghost" id="n-znovu">Zkusit znovu</button></div></div>`;
+    else krok=`<div class="panel"><h2 style="margin-top:0">Heslo kolektivu</h2>
+      <p>Zadej heslo kolektivu, které ti předal správce. Bez něj appka neukáže jména žáků.</p>
+      <label class="f">Heslo kolektivu<input type="password" id="n-heslo" autocomplete="current-password"></label>
+      <div class="btns"><button class="btn" id="n-odemknout">Odemknout</button></div><p class="hint err" id="n-err"></p></div>`;
+  }
+  const pocet=S.zaci.size, akt=[...S.zaci.values()].filter(z=>z.akt!==false).length;
+  const sprava=spr&&KEY?`
+    <h2>Správa</h2>
+    <div class="panel"><b>Seznam žáků</b><p class="hint">Nahraj export ze Školy OnLine (CSV nebo XLSX) se sloupci třída, příjmení, jméno a pokud je, pohlaví. Nahrává se jednou za školní rok, nejlépe v září. Kdo v novém seznamu chybí, skryje se, jeho výkony zůstanou.</p>
+      <p class="num">V appce: ${akt} aktivních žáků${pocet>akt?`, ${pocet-akt} bývalých`:""}.</p>
+      <input type="file" id="n-zaci" accept=".csv,.xlsx,.xls,text/csv"><div id="n-zaci-out"></div></div>
+    <div class="panel"><b>Rekordy z nástěnky</b><p class="hint">Nahraj Rekordmani.xlsx. Appka z ní vezme rekordy všech ročníků i se jmény držitelů (zašifrovaně). Rekordy schválené v appce se nepřepíšou, pokud jsou lepší.</p>
+      <input type="file" id="n-rek" accept=".xlsx"><div id="n-rek-out"></div></div>
+    <div class="panel"><b>Učitelé</b><p class="hint">Každý učitel má vlastní kód. Kód se ukáže jen jednou, pošli ho kolegovi osobně nebo zprávou. Heslo kolektivu mu řekni zvlášť.</p>
+      <div id="n-uc">${S.sprava.ucitele?renderUcitele():'<button class="btn small ghost" id="n-uc-load">Načíst učitele</button>'}</div>
+      <div class="row" style="margin-top:10px"><label class="f">Jméno nového učitele<input type="text" id="n-uc-jm" placeholder="Kateřina Kultová"></label></div>
+      <div class="btns"><button class="btn small" id="n-uc-add">Přidat a vytvořit kód</button></div>
+      ${S.sprava.novyKod?`<div style="margin-top:10px"><p>Kód pro <b>${esc(S.sprava.novyKod.jmeno)}</b>:</p><div class="code">${esc(S.sprava.novyKod.kod)}</div><div class="btns"><button class="btn small ghost" id="n-uc-copy">Zkopírovat zprávu pro kolegu</button></div></div>`:""}</div>`:"";
+  const export_=S.ja&&KEY?`<h2>Data</h2><div class="panel"><p class="hint">Všechny výkony se jmény do tabulky (CSV pro Excel).</p><div class="btns"><button class="btn small ghost" id="n-export">Stáhnout výkony</button><button class="btn small ghost" id="n-sync">Synchronizovat teď</button></div></div>`:"";
+  const ucet=S.ja?`<h2>Účet</h2><div class="panel"><p>Přihlášen: <b>${esc(S.ja.jmeno)}</b>${spr?" (správce)":""}</p><p class="hint num">Verze ${VERZE}${S.syncChyba?` · ${esc(S.syncChyba)}`:""}</p><div class="btns"><button class="btn small ghost" id="n-logout">Odhlásit z tohoto zařízení</button></div></div>`:"";
+  $("#main").innerHTML=`<h1>Nastavení</h1>${krok||""}${sprava}${export_}${ucet}
+    ${!S.ja?`<p class="hint" style="margin-top:14px">Appku si přidej na plochu: v Safari Sdílet a Přidat na plochu, v Chromu na Androidu menu a Přidat na plochu.</p>`:""}`;
+}
+function renderUcitele(){
+  const u=S.sprava.ucitele;
+  if(!u.length) return `<p class="hint">Zatím žádní další učitelé.</p>`;
+  return `<div class="ul">${u.map(x=>`<div class="u"><span>${esc(x.jmeno)}${x.aktivni?"":" <span class='hint'>(zrušený)</span>"}</span><span class="btns" style="margin:0">${x.aktivni?`<button class="btn small ghost" data-uc="zrusit" data-id="${x.id}">Zrušit kód</button>`:""}<button class="btn small ghost" data-uc="novy-kod" data-id="${x.id}" data-jm="${esc(x.jmeno)}">Nový kód</button></span></div>`).join("")}</div>`;
+}
+async function prihlasit(){
+  const srv=($("#n-server")?$("#n-server").value.trim():S.server)||VYCHOZI_SERVER;
+  const kod=$("#n-kod").value.trim().toLowerCase();
+  if(!srv||!kod){$("#n-err").textContent="Vyplň adresu serveru i kód.";return;}
+  S.server=srv; S.kod=kod;
+  try{
+    const ja=await api("/ja");
+    S.ja={id:ja.id,jmeno:ja.jmeno,spravce:ja.spravce};
+    await metaSet("server",srv); await metaSet("kod",kod); await metaSet("ja",S.ja);
+    renderKdo(); await syncNow(); await zkusOdemknout();
+    if(KEY) S.tab="mereni";
+    renderTabs(); render();
+  }catch(e){$("#n-err").textContent=e.status===401?"Kód neplatí. Zkontroluj ho, nebo si řekni správci o nový.":"Server nejde zastihnout: "+e.message;}
+}
+async function zalozitHeslo(){
+  const h1=$("#n-h1").value, h2=$("#n-h2").value;
+  if(h1.length<8){$("#n-err").textContent="Heslo musí mít aspoň 8 znaků.";return;}
+  if(h1!==h2){$("#n-err").textContent="Hesla se neshodují.";return;}
+  await syncNow();
+  if(S.sys.has("sul")){render();toast("Heslo už mezitím někdo založil, zadej ho.");return;}
+  const sul=b64(crypto.getRandomValues(new Uint8Array(16)));
+  const k=await odvodKlic(h1,sul);
+  const kontrola=await zasifruj(KONTROLA,k);
+  await zapis("sys","sul",{sul}); await zapis("sys","kontrola",{enc:kontrola});
+  S.sys.set("sul",{sul}); S.sys.set("kontrola",{enc:kontrola});
+  await metaSet("heslo",h1); KEY=k;
+  await syncNow(); render(); toast("Heslo kolektivu je založené.");
+}
+async function odemknout(){
+  const h=$("#n-heslo").value;
+  await metaSet("heslo",h);
+  if(await zkusOdemknout()){S.tab="mereni";renderTabs();render();toast("Odemčeno.");}
+  else{await metaSet("heslo",null);$("#n-err").textContent="Heslo nesedí.";}
+}
+async function odhlasit(){
+  for(const s of STORES) await dbClear(s);
+  KEY=null; S.ja=null; S.kod=""; S.server=VYCHOZI_SERVER; await nactiPamet(); renderKdo(); S.tab="nastaveni"; renderTabs(); render();
+}
+
+/* ---------- import seznamu žáků ---------- */
+function loadXLSX(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((ok,ko)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=()=>ok(window.XLSX);s.onerror=()=>ko(new Error("Knihovnu pro Excel nejde stáhnout, zkontroluj internet."));document.head.appendChild(s);});
+}
+function parseCSV(text){
+  text=text.replace(/^﻿/,"");
+  const first=text.split(/\r?\n/)[0]||"";
+  const sep=[";",",","\t"].sort((a,b)=>first.split(b).length-first.split(a).length)[0];
+  const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; } else cell+=c; continue; }
+    if(c==='"') q=true; else if(c===sep){row.push(cell);cell="";} else if(c==="\n"){row.push(cell);rows.push(row);row=[];cell="";} else if(c!=="\r") cell+=c;
+  }
+  if(cell||row.length){row.push(cell);rows.push(row);}
+  return rows.filter(r=>r.some(x=>String(x).trim()));
+}
+async function nactiTabulku(file){
+  if(/\.xlsx?$/i.test(file.name)){
+    const X=await loadXLSX(); const wb=X.read(await file.arrayBuffer(),{type:"array"});
+    const ws=wb.Sheets[wb.SheetNames[0]]; return X.utils.sheet_to_json(ws,{header:1,raw:false,defval:""});
+  }
+  const buf=await file.arrayBuffer();
+  let text=new TextDecoder("utf-8").decode(buf);
+  if(text.includes("�")) text=new TextDecoder("windows-1250").decode(buf);
+  return parseCSV(text);
+}
+const RIM={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8,IX:9};
+function parseTrida(s){
+  s=String(s||"").trim().toUpperCase().replace(/\s+/g," ");
+  let m=s.match(/^(IX|VIII|VII|VI|IV|V|III|II|I)\s*\.?\s*([A-Z])\b/); if(m) return {g:RIM[m[1]],pis:m[2]};
+  m=s.match(/^([1-9])\s*\.?\s*([A-Z])\b/); if(m) return {g:+m[1],pis:m[2]};
+  return null;
+}
+const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z]/g,"");
+function hadejPohlavi(prijmeni,jmeno){
+  const p=String(prijmeni).trim().toLowerCase();
+  if(/(ová|ova|á)$/.test(p)) return "F";
+  const j=String(jmeno).trim().toLowerCase();
+  if(/(a|e|ie)$/.test(j)&&!/^(jirka|honza|nikola|sasha|saša|luca|ilja|ilya|jona)$/.test(j)) return /(ý|ský|ck[ýy])$/.test(p)?"M":"F";
+  return "M";
+}
+function rozpoznejSloupce(rows){
+  // najdi řádek s hlavičkou v prvních 10 řádcích
+  for(let i=0;i<Math.min(10,rows.length);i++){
+    const h=rows[i].map(norm);
+    const f=k=>h.findIndex(x=>k.some(kk=>x===kk||x.startsWith(kk)));
+    const tr=f(["trida","class","skupina"]), pr=f(["prijmeni","surname"]), jm=f(["jmeno","krestni","name"]), po=f(["pohlavi","sex"]), cele=f(["zak","jmenoaprijmeni","prijmeniajmeno","zaci"]);
+    if(tr>=0&&((pr>=0&&jm>=0&&pr!==jm)||cele>=0)) return {i,tr,pr,jm:jm===pr?-1:jm,po,cele};
+  }
+  return null;
+}
+async function importZaku(file){
+  const out=$("#n-zaci-out"); out.innerHTML='<p class="hint">Načítám…</p>';
+  try{
+    const rows=await nactiTabulku(file);
+    const c=rozpoznejSloupce(rows);
+    if(!c){out.innerHTML=`<p class="err">V souboru jsem nenašel sloupce třída, příjmení a jméno. První řádek: ${esc((rows[0]||[]).join(" | "))}</p>`;return;}
+    const sy=SY_NOW(); const nove=[]; let spatne=0, hadano=0;
+    for(const r of rows.slice(c.i+1)){
+      const t=parseTrida(r[c.tr]); if(!t){spatne++;continue;}
+      let p,j;
+      if(c.pr>=0&&c.jm>=0){p=String(r[c.pr]).trim();j=String(r[c.jm]).trim();}
+      else {const parts=String(r[c.cele]).trim().split(/\s+/);p=parts.shift()||"";j=parts.join(" ");}
+      if(!p){spatne++;continue;}
+      let sex=null;
+      if(c.po>=0){const x=norm(r[c.po]);sex=/^(z|f|d|div|divka|zena|zenske|w)/.test(x)?"F":/^(m|ch|chl|chlapec|muz|muzske|k|kluk)/.test(x)?"M":null;}
+      if(!sex){sex=hadejPohlavi(p,j);hadano++;}
+      nove.push({p,j,pis:t.pis,coh:sy-t.g+1,sex,g:t.g});
+    }
+    if(!nove.length){out.innerHTML='<p class="err">Žádný žák se nenačetl.</p>';return;}
+    const tridyN=new Map();for(const z of nove) tridyN.set(z.g+"."+z.pis,(tridyN.get(z.g+"."+z.pis)||0)+1);
+    S._importZaci=nove;
+    out.innerHTML=`<p style="margin-top:10px"><b>${nove.length} žáků</b> v ${tridyN.size} třídách: ${[...tridyN.entries()].sort((a,b)=>parseInt(a[0])-parseInt(b[0])||a[0].localeCompare(b[0])).map(([t,n])=>t+" ("+n+")").join(", ")}.</p>
+      ${hadano?`<p class="hint">Pohlaví u ${hadano} žáků appka odhadla podle jména, opravit jde v profilu žáka.</p>`:""}
+      ${spatne?`<p class="hint">${spatne} řádků bez třídy nebo jména jsem přeskočil.</p>`:""}
+      <div class="btns"><button class="btn" id="n-zaci-ok">Uložit seznam</button></div>`;
+  }catch(e){out.innerHTML=`<p class="err">${esc(e.message)}</p>`;}
+}
+async function ulozitZaky(){
+  const nove=S._importZaci; if(!nove||!KEY) return;
+  const stari=[...S.zaci.values()];
+  const podleKlice=new Map(stari.map(z=>[norm(z.p)+"|"+norm(z.j)+"|"+z.coh+"|"+z.pis,z]));
+  const podleJmena=new Map();for(const z of stari){const k=norm(z.p)+"|"+norm(z.j);podleJmena.set(k,(podleJmena.get(k)||[]).concat(z));}
+  const pouzite=new Set(); let novych=0, zmen=0;
+  for(const n of nove){
+    let z=podleKlice.get(norm(n.p)+"|"+norm(n.j)+"|"+n.coh+"|"+n.pis);
+    if(!z||pouzite.has(z.id)){const c=(podleJmena.get(norm(n.p)+"|"+norm(n.j))||[]).filter(x=>!pouzite.has(x.id));z=c.length===1?c[0]:null;}
+    const id=z?z.id:uid("z"); pouzite.add(id);
+    const data={j:n.j,p:n.p,pis:n.pis,coh:n.coh,sex:z&&z.sexRucne?z.sex:n.sex,sexRucne:!!(z&&z.sexRucne),akt:true};
+    if(!z) novych++;
+    if(!z||z.j!==data.j||z.p!==data.p||z.pis!==data.pis||z.coh!==data.coh||z.sex!==data.sex||z.akt===false){
+      await zapis("zaci",id,{enc:await zasifruj(data)}); S.zaci.set(id,{...data,id}); zmen++;
+    }
+  }
+  let skryto=0;
+  for(const z of stari) if(!pouzite.has(z.id)&&z.akt!==false){const data={...z,akt:false};delete data.id;await zapis("zaci",z.id,{enc:await zasifruj(data)});S.zaci.set(z.id,{...data,id:z.id});skryto++;}
+  S._importZaci=null; render();
+  toast(`Uloženo. Nových žáků ${novych}, změněných ${zmen-novych}, skrytých ${skryto}.`);
+}
+async function zmenitPohlavi(id){
+  const z=S.zaci.get(id); if(!z||!KEY) return;
+  const data={...z,sex:z.sex==="M"?"F":"M",sexRucne:true}; delete data.id;
+  await zapis("zaci",id,{enc:await zasifruj(data)}); S.zaci.set(id,{...data,id});
+  for(const v of S.vykony.values()) if(v.z===id&&v.sex!==data.sex&&smiMenit(v)){const nv={...v,sex:data.sex};delete nv.id;await zapis("vykony",v.id,nv);S.vykony.set(v.id,{...nv,id:v.id});}
+  render(); toast("Pohlaví opraveno.");
+}
+
+/* ---------- import rekordů z Rekordmani.xlsx ---------- */
+function mapDisc(label){
+  const s=String(label).toLowerCase();
+  if(s.includes("tafeta")) return null;
+  if(/^\s*60\s*m/.test(s)) return "d60"; if(/^\s*200\s*m/.test(s)) return "d200"; if(/^\s*400\s*m/.test(s)) return "d400";
+  if(/^\s*500\s*m/.test(s)) return "d500"; if(/^\s*1000\s*m/.test(s)) return "d1000";
+  if(s.includes("místa")) return "zm"; if(s.includes("dalek")) return "dal"; if(s.includes("vysok")) return "vys";
+  if(s.includes("raketk")) return "rak"; if(s.includes("míčk")) return "mic"; if(s.includes("koul")) return "kou"; if(s.includes("šplh")) return "spl";
+  return undefined;
+}
+function hodnotaDatumu(c){
+  if(!c) return "";
+  if(c.t==="d"||c.v instanceof Date){const d=c.v instanceof Date?c.v:new Date(c.v);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  return String(c.w||c.v||"").trim();
+}
+async function importRekordu(file){
+  const out=$("#n-rek-out"); out.innerHTML='<p class="hint">Načítám…</p>';
+  try{
+    const X=await loadXLSX(); const wb=X.read(await file.arrayBuffer(),{type:"array",cellDates:true});
+    const nalez=[];
+    for(let g=1;g<=9;g++){
+      const ws=wb.Sheets[g+".třída"]; if(!ws) continue;
+      for(const [lc,vc,nc,dc,tc] of [["C","D","A","B","D"],["H","I","F","G","I"]]){
+        const labels=[];
+        for(let r=1;r<=90;r++){const c=ws[lc+r];if(c&&typeof c.v==="string"&&mapDisc(c.v)!==undefined) labels.push({r,label:c.v,d:mapDisc(c.v)});}
+        labels.filter(x=>x.d!==null).forEach((x,i)=>{
+          const sex=i%2===0?"M":"F";
+          const val=ws[vc+x.r]; const raw=val?String(val.w||val.v):"";
+          if(!raw||raw.startsWith("#")) return;
+          const v=parseVal(raw,x.d); if(v==null||isNaN(v)) return;
+          const jm=ws[nc+x.r]?String(ws[nc+x.r].v).replace(/\s*\n\s*/g," ").trim():"";
+          if(jm.startsWith("#")) return;
+          const tr=ws[tc+(x.r-3)]?String(ws[tc+(x.r-3)].w||ws[tc+(x.r-3)].v).trim():"";
+          const dt=hodnotaDatumu(ws[dc+(x.r-3)]);
+          nalez.push({g,d:x.d,sex,v,jm,tr,dt});
+        });
+      }
+    }
+    if(!nalez.length){out.innerHTML='<p class="err">V souboru jsem žádné rekordy nenašel. Je to Rekordmani.xlsx s listy 1.třída až 9.třída?</p>';return;}
+    S._importRek=nalez;
+    out.innerHTML=`<p style="margin-top:10px"><b>${nalez.length} rekordů</b> v ${new Set(nalez.map(x=>x.g)).size} ročnících.</p><div class="btns"><button class="btn" id="n-rek-ok">Uložit rekordy</button></div>`;
+  }catch(e){out.innerHTML=`<p class="err">${esc(e.message)}</p>`;}
+}
+async function ulozitRekordy(){
+  const list=S._importRek; if(!list||!KEY) return; let n=0;
+  for(const x of list){
+    const k=x.g+"|"+x.d+"|"+x.sex; const cur=S.rekordy.get(k);
+    if(cur&&cur.zdroj==="appka"&&!better(x.v,cur.v,x.d)) continue;
+    const rec={g:x.g,d:x.d,sex:x.sex,v:x.v,z:null,enc:await zasifruj({jm:x.jm}),tr:x.tr,dt:x.dt,zdroj:"nastenka"};
+    await zapis("rekordy",k,rec); S.rekordy.set(k,{...rec,jm:x.jm}); n++;
+  }
+  S._importRek=null; render(); toast(`Uloženo ${n} rekordů z nástěnky.`);
+}
+
+/* ---------- export ---------- */
+function exportCSV(){
+  const rows=[["datum","třída","příjmení","jméno","pohlaví","disciplína","výkon","jednotka","zapsal"]];
+  const all=[...S.vykony.values()].sort((a,b)=>a.datum.localeCompare(b.datum));
+  for(const v of all){const z=S.zaci.get(v.z)||{};const D=DISC[v.d];rows.push([v.datum,v.tr,z.p||"",z.j||"",v.sex==="M"?"chlapec":"dívka",dn(v.d,v.g),D.u==="min"?fmt(v.v,"min").replace(" min",""):cz(v.v),D.u,v.autor||""]);}
+  const csv="﻿"+rows.map(r=>r.map(x=>{x=String(x);return /[;"\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;}).join(";")).join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="rekordnik-vykony-"+dnes()+".csv";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+}
+
+/* ---------- navigace ---------- */
+const ICON={
+ mereni:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M10 3h4M18.5 6.5l1.5-1.5"/></svg>',
+ zaci:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></svg>',
+ prehledy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V12M12 20V5M19 20v-9M3 20.5h18"/></svg>',
+ rekordy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><circle cx="12" cy="15" r="5.5"/><path d="M8.5 10.5L6 3h4l2 5 2-5h4l-2.5 7.5"/></svg>'};
+const TABS=[["mereni","Měření"],["zaci","Žáci"],["prehledy","Přehledy"],["rekordy","Rekordy"]];
+function renderTabs(){
+  const pripraveno=S.ja&&KEY;
+  $("#nav").hidden=!pripraveno;
+  const k=pripraveno?kandidati().length:0;
+  $("#tabs").innerHTML=TABS.map(([id,t])=>`<button data-tab="${id}"${S.tab===id?' aria-current="page"':""}>${ICON[id]}${t}${id==="rekordy"&&k?`<span class="badge num">${k}</span>`:""}</button>`).join("");
+  $("#btnNast").setAttribute("aria-current",S.tab==="nastaveni"?"page":"false");
+}
+function render(){
+  if(!(S.ja&&KEY)&&S.tab!=="nastaveni") S.tab="nastaveni";
+  ({mereni:renderMereni,zaci:renderZaci,prehledy:renderPrehledy,rekordy:renderRekordy,nastaveni:renderNastaveni})[S.tab]();
+}
+$("#tabs").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(!b)return;S.tab=b.dataset.tab;renderTabs();render();scrollTo(0,0);});
+$("#btnNast").addEventListener("click",()=>{S.tab=S.tab==="nastaveni"&&S.ja&&KEY?"mereni":"nastaveni";renderTabs();render();scrollTo(0,0);});
+const M=$("#main");
+M.addEventListener("change",async e=>{
+  const t=e.target;
+  if(t.id==="m-cls"){S.mer.cls=t.value;S.mer.inp={};S.mer.ok.clear();metaSet("prefs",{cls:S.mer.cls,d:S.mer.d});render();}
+  else if(t.id==="m-d"){S.mer.d=t.value;S.mer.inp={};S.mer.ok.clear();metaSet("prefs",{cls:S.mer.cls,d:S.mer.d});render();}
+  else if(t.id==="m-date"){S.mer.date=t.value||dnes();}
+  else if(t.id==="z-cls"){S.zaci_ui.cls=t.value;render();}
+  else if(t.id==="z-stari"){S.zaci_ui.stari=t.checked;render();}
+  else if(t.id==="p-g"){S.pre.g=+t.value;render();}
+  else if(t.id==="p-d"){S.pre.d=t.value;render();}
+  else if(t.id==="p-sy"){S.pre.sy=+t.value;render();}
+  else if(t.id==="n-zaci"&&t.files[0]) importZaku(t.files[0]);
+  else if(t.id==="n-rek"&&t.files[0]) importRekordu(t.files[0]);
+});
+M.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.kid){S.mer.inp[t.dataset.kid]=t.value;S.mer.ok.delete(t.dataset.kid);updateRow(t.dataset.kid);}
+  else if(t.id==="z-q"){S.zaci_ui.q=t.value;const pos=t.selectionStart;render();const n=$("#z-q");n.focus();try{n.setSelectionRange(pos,pos);}catch(_){}}
+});
+M.addEventListener("keydown",e=>{
+  const t=e.target;
+  if(t.dataset&&t.dataset.kid&&e.key==="Enter"){e.preventDefault();const ins=[...M.querySelectorAll(".inp")];const i=ins.indexOf(t);if(ins[i+1]) ins[i+1].focus(); else t.blur();}
+  if(t.id==="n-kod"&&e.key==="Enter") prihlasit();
+  if(t.id==="n-heslo"&&e.key==="Enter") odemknout();
+});
+let _delArm=null;
+M.addEventListener("click",async e=>{
+  const t=e.target.closest("button"); if(!t) return;
+  try{
+  if(t.id==="m-save") await saveMereni();
+  else if(t.dataset.okv){S.mer.ok.add(t.dataset.okv);updateRow(t.dataset.okv);}
+  else if(t.dataset.open){S.zaci_ui.kid=t.dataset.open;render();scrollTo(0,0);}
+  else if(t.id==="z-back"){S.zaci_ui.kid=null;render();}
+  else if(t.dataset.sex) await zmenitPohlavi(t.dataset.sex);
+  else if(t.dataset.delv){
+    if(_delArm!==t.dataset.delv){_delArm=t.dataset.delv;t.textContent="Opravdu smazat?";t.classList.add("warn");return;}
+    _delArm=null; const id=t.dataset.delv; await zapis("vykony",id,null); S.vykony.delete(id); render(); toast("Smazáno.");
+  }
+  else if(t.dataset.psex){S.pre.sex=t.dataset.psex;render();}
+  else if(t.dataset.rg){S.rek.g=+t.dataset.rg;render();}
+  else if(t.dataset.appr) await schvalit(t.dataset.appr);
+  else if(t.dataset.rej) await zamitnout(t.dataset.rej);
+  else if(t.id==="r-copy"){const txt=[...M.querySelectorAll(".panel p.num")].map(p=>p.textContent).join("\n");try{await navigator.clipboard.writeText(txt);toast("Zkopírováno.");}catch(_){toast("Kopírování nejde, označ text ručně.");}}
+  else if(t.id==="n-login") await prihlasit();
+  else if(t.id==="n-zalozit") await zalozitHeslo();
+  else if(t.id==="n-odemknout") await odemknout();
+  else if(t.id==="n-znovu"){await syncNow();render();}
+  else if(t.id==="n-logout"){if(t.dataset.arm){await odhlasit();}else{t.dataset.arm="1";t.textContent="Opravdu? Neodeslané změny se ztratí";t.classList.add("warn");}}
+  else if(t.id==="n-zaci-ok") await ulozitZaky();
+  else if(t.id==="n-rek-ok") await ulozitRekordy();
+  else if(t.id==="n-export") exportCSV();
+  else if(t.id==="n-sync"){await syncNow();toast(S.syncStav==="ok"?"Synchronizováno.":"Synchronizace selhala: "+S.syncChyba);}
+  else if(t.id==="n-uc-load"){S.sprava.ucitele=(await api("/ucitele")).ucitele;render();}
+  else if(t.id==="n-uc-add"){const jm=$("#n-uc-jm").value.trim();if(!jm){toast("Napiš jméno.");return;}const r=await api("/ucitele",{akce:"pridat",jmeno:jm});S.sprava.novyKod={jmeno:jm,kod:r.kod};S.sprava.ucitele=(await api("/ucitele")).ucitele;render();}
+  else if(t.dataset.uc){const r=await api("/ucitele",{akce:t.dataset.uc,id:t.dataset.id});if(r.kod) S.sprava.novyKod={jmeno:t.dataset.jm,kod:r.kod};S.sprava.ucitele=(await api("/ucitele")).ucitele;render();}
+  else if(t.id==="n-uc-copy"){const n=S.sprava.novyKod;const txt=`Ahoj, tady je přístup do Rekordníku, naší společné appky na výkony v TV.\n\n1. Otevři ${location.origin+location.pathname}\n2. Přidej si ji na plochu (Safari: Sdílet, Přidat na plochu; Android: menu, Přidat na plochu).\n3. Zadej svůj osobní kód: ${n.kod}\n4. Heslo kolektivu ti řeknu osobně.\n\nKarel`;try{await navigator.clipboard.writeText(txt);toast("Zpráva zkopírovaná.");}catch(_){toast("Kopírování nejde, opiš kód ručně.");}}
+  }catch(err){toast(err.message||String(err));}
+});
+
+/* ---------- service worker a aktualizace ---------- */
+let _reg=null;
+function regUpdate(){if(_reg) _reg.update().catch(()=>{});}
+if("serviceWorker" in navigator&&location.protocol==="https:"){
+  navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(reg=>{
+    _reg=reg;
+    const hlasit=w=>{if(!w)return;w.addEventListener("statechange",()=>{if(w.state==="installed"&&navigator.serviceWorker.controller) $("#upd").hidden=false;});};
+    if(reg.waiting&&navigator.serviceWorker.controller) $("#upd").hidden=false;
+    reg.addEventListener("updatefound",()=>hlasit(reg.installing));
+  }).catch(()=>{});
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(reloaded)return;reloaded=true;location.reload();});
+  $("#updBtn").addEventListener("click",()=>{if(_reg&&_reg.waiting) _reg.waiting.postMessage("skip"); else location.reload();});
+}
+
+start().catch(e=>{$("#main").innerHTML=`<div class="panel"><p class="err">Appka nejde spustit: ${esc(e.message)}</p></div>`;});
+</script>
+</body>
+</html>
