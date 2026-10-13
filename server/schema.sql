@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS ucitele (
   id        TEXT PRIMARY KEY,
   jmeno     TEXT NOT NULL,
   kod_hash  TEXT NOT NULL UNIQUE,
+  kod_enc   TEXT,               -- kód zašifrovaný heslem kolektivu, jen pro správce
   spravce   INTEGER NOT NULL DEFAULT 0,
   aktivni   INTEGER NOT NULL DEFAULT 1,
   vytvoreno INTEGER NOT NULL DEFAULT 0

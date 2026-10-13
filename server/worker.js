@@ -5,6 +5,7 @@
 // Bezpečnost:
 // - Každý učitel má osobní kód. Na serveru je jen jeho SHA-256 otisk v tabulce `ucitele`.
 //   Správce (Karel) má kód v secretu SPRAVCE_KOD a v aplikaci zakládá kódy ostatním.
+//   Kód vzniká v aplikaci správce, server dostane otisk a kopii zašifrovanou heslem kolektivu.
 // - Jména žáků i držitelů rekordů přicházejí zašifrovaná heslem kolektivu (AES-GCM),
 //   server vidí jen bajty. Heslo nikdy neopustí telefon.
 // - Seznam žáků, rekordy a nastavení šifrování smí měnit jen správce.
@@ -35,14 +36,6 @@ const odpoved = (telo, status = 200) =>
 async function sha256(text) {
   const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
-}
-
-function novyKod() {
-  // 12 znaků bez snadno zaměnitelných (0/O, 1/l/I), ve skupinách po čtyřech
-  const abc = "abcdefghjkmnpqrstuvwxyz23456789";
-  const b = crypto.getRandomValues(new Uint8Array(12));
-  const s = [...b].map((x) => abc[x % abc.length]).join("");
-  return s.slice(0, 4) + "-" + s.slice(4, 8) + "-" + s.slice(8, 12);
 }
 
 async function kdoJe(req, env) {
@@ -89,29 +82,45 @@ async function stav(env) {
 }
 
 async function ucitele(env) {
-  const r = await env.DB.prepare("SELECT id, jmeno, spravce, aktivni, vytvoreno FROM ucitele ORDER BY vytvoreno").all();
+  const r = await env.DB.prepare("SELECT id, jmeno, spravce, aktivni, vytvoreno, kod_enc FROM ucitele ORDER BY vytvoreno").all();
   return { ok: true, ucitele: (r.results || []).map((u) => ({ ...u, spravce: !!u.spravce, aktivni: !!u.aktivni })) };
+}
+
+// Kód vytváří aplikace správce. Server dostane jen otisk (na přihlášení) a kód zašifrovaný
+// heslem kolektivu (aby se na něj správce mohl později podívat). Čitelný kód se neukládá.
+function kodZTela(telo) {
+  const h = String(telo.kod_hash || "").toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(h)) return null;
+  const enc = telo.kod_enc == null ? null : String(telo.kod_enc).slice(0, 2000);
+  return { h, enc };
 }
 
 async function ucitelZmena(env, telo) {
   const akce = telo && telo.akce;
+  const id = String((telo && telo.id) || "");
   if (akce === "pridat") {
     const jmeno = String(telo.jmeno || "").trim().slice(0, 80);
     if (!jmeno) return { chyba: "Chybí jméno." };
-    const kod = novyKod();
-    const id = "u_" + (await sha256(kod + Date.now())).slice(0, 12);
-    await env.DB.prepare("INSERT INTO ucitele (id, jmeno, kod_hash, spravce, aktivni, vytvoreno) VALUES (?1, ?2, ?3, ?4, 1, ?5)")
-      .bind(id, jmeno, await sha256(kod), telo.spravce ? 1 : 0, Date.now()).run();
-    return { ok: true, id, jmeno, kod };
-  }
-  if (akce === "zrusit" || akce === "obnovit") {
-    await env.DB.prepare("UPDATE ucitele SET aktivni = ?1 WHERE id = ?2").bind(akce === "obnovit" ? 1 : 0, String(telo.id)).run();
-    return { ok: true };
+    const k = kodZTela(telo);
+    if (!k) return { chyba: "Chybí otisk kódu, obnov aplikaci na novou verzi." };
+    const noveId = "u_" + (await sha256(k.h + Date.now())).slice(0, 12);
+    await env.DB.prepare("INSERT INTO ucitele (id, jmeno, kod_hash, kod_enc, spravce, aktivni, vytvoreno) VALUES (?1, ?2, ?3, ?4, ?5, 1, ?6)")
+      .bind(noveId, jmeno, k.h, k.enc, telo.spravce ? 1 : 0, Date.now()).run();
+    return { ok: true, id: noveId, jmeno };
   }
   if (akce === "novy-kod") {
-    const kod = novyKod();
-    await env.DB.prepare("UPDATE ucitele SET kod_hash = ?1, aktivni = 1 WHERE id = ?2").bind(await sha256(kod), String(telo.id)).run();
-    return { ok: true, kod };
+    const k = kodZTela(telo);
+    if (!k) return { chyba: "Chybí otisk kódu, obnov aplikaci na novou verzi." };
+    await env.DB.prepare("UPDATE ucitele SET kod_hash = ?1, kod_enc = ?2, aktivni = 1 WHERE id = ?3").bind(k.h, k.enc, id).run();
+    return { ok: true };
+  }
+  if (akce === "zrusit" || akce === "obnovit") {
+    await env.DB.prepare("UPDATE ucitele SET aktivni = ?1 WHERE id = ?2").bind(akce === "obnovit" ? 1 : 0, id).run();
+    return { ok: true };
+  }
+  if (akce === "smazat") {
+    await env.DB.prepare("DELETE FROM ucitele WHERE id = ?1").bind(id).run();
+    return { ok: true };
   }
   return { chyba: "neznámá akce" };
 }

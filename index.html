@@ -165,7 +165,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent);background:var(--accent
    Rekordník · společná evidence výkonů v TV, ZŠ Mendelova
    Verze se zvyšuje spolu s CACHE v sw.js.
    ========================================================================== */
-const VERZE = "1.0.0";
+const VERZE = "1.1.0";
 // Adresa Workeru po nasazení. Prázdná = zadává se v Nastavení.
 const VYCHOZI_SERVER = "https://rekordnik.chuanito-bonito.workers.dev";
 
@@ -283,7 +283,7 @@ const S={
   zaci_ui:{q:"",cls:"",kid:null,stari:false},
   pre:{g:6,sex:"M",d:"d60",sy:skolniRok(dnes())},
   rek:{g:6},
-  sprava:{ucitele:null,novyKod:null}
+  sprava:{ucitele:null,novyKod:null,kody:{},smazArm:null}
 };
 const SY_NOW=()=>skolniRok(dnes());
 const rocnik=(z,sy=SY_NOW())=>sy-z.coh+1;
@@ -692,11 +692,11 @@ function renderNastaveni(){
       <input type="file" id="n-zaci" accept=".csv,.xlsx,.xls,text/csv"><div id="n-zaci-out"></div></div>
     <div class="panel"><b>Rekordy z nástěnky</b><p class="hint">Nahraj Rekordmani.xlsx. Appka z ní vezme rekordy všech ročníků i se jmény držitelů (zašifrovaně). Rekordy schválené v appce se nepřepíšou, pokud jsou lepší.</p>
       <input type="file" id="n-rek" accept=".xlsx"><div id="n-rek-out"></div></div>
-    <div class="panel"><b>Učitelé</b><p class="hint">Každý učitel má vlastní kód. Kód se ukáže jen jednou, pošli ho kolegovi osobně nebo zprávou. Heslo kolektivu mu řekni zvlášť.</p>
+    <div class="panel"><b>Učitelé</b><p class="hint">Každý učitel má vlastní kód. Kód se dá kdykoli znovu zobrazit tlačítkem Ukázat kód, zprávu s ním pošli kolegovi. Heslo kolektivu mu řekni zvlášť.</p>
       <div id="n-uc">${S.sprava.ucitele?renderUcitele():'<button class="btn small ghost" id="n-uc-load">Načíst učitele</button>'}</div>
       <div class="row" style="margin-top:10px"><label class="f">Jméno nového učitele<input type="text" id="n-uc-jm" placeholder="Kateřina Kultová"></label></div>
       <div class="btns"><button class="btn small" id="n-uc-add">Přidat a vytvořit kód</button></div>
-      ${S.sprava.novyKod?`<div style="margin-top:10px"><p>Kód pro <b>${esc(S.sprava.novyKod.jmeno)}</b>:</p><div class="code">${esc(S.sprava.novyKod.kod)}</div><div class="btns"><button class="btn small ghost" id="n-uc-copy">Zkopírovat zprávu pro kolegu</button></div></div>`:""}</div>`:"";
+      </div>`:"";
   const export_=S.ja&&KEY?`<h2>Data</h2><div class="panel"><p class="hint">Všechny výkony se jmény do tabulky (CSV pro Excel).</p><div class="btns"><button class="btn small ghost" id="n-export">Stáhnout výkony</button><button class="btn small ghost" id="n-sync">Synchronizovat teď</button></div></div>`:"";
   const ucet=S.ja?`<h2>Účet</h2><div class="panel"><p>Přihlášen: <b>${esc(S.ja.jmeno)}</b>${spr?" (správce)":""}</p><p class="hint num">Verze ${VERZE}${S.syncChyba?` · ${esc(S.syncChyba)}`:""}</p><div class="btns"><button class="btn small ghost" id="n-logout">Odhlásit z tohoto zařízení</button></div></div>`:"";
   $("#main").innerHTML=`<h1>Nastavení</h1>${krok||""}${sprava}${export_}${ucet}
@@ -705,8 +705,34 @@ function renderNastaveni(){
 function renderUcitele(){
   const u=S.sprava.ucitele;
   if(!u.length) return `<p class="hint">Zatím žádní další učitelé.</p>`;
-  return `<div class="ul">${u.map(x=>`<div class="u"><span>${esc(x.jmeno)}${x.aktivni?"":" <span class='hint'>(zrušený)</span>"}</span><span class="btns" style="margin:0">${x.aktivni?`<button class="btn small ghost" data-uc="zrusit" data-id="${x.id}">Zrušit kód</button>`:""}<button class="btn small ghost" data-uc="novy-kod" data-id="${x.id}" data-jm="${esc(x.jmeno)}">Nový kód</button></span></div>`).join("")}</div>`;
+  return `<div class="ul">${u.map(x=>{
+    const kod=S.sprava.kody[x.id];
+    const smaz=S.sprava.smazArm===x.id;
+    return `<div class="panel" style="padding:10px 12px"><div class="u"><b>${esc(x.jmeno)}</b>${x.aktivni?"":" <span class='hint'>kód zrušený</span>"}</div>
+      ${kod?`<div class="code" style="margin-top:8px">${esc(kod)}</div>`:""}
+      <div class="btns">
+        ${x.kod_enc&&!kod?`<button class="btn small ghost" data-ucshow="${x.id}">Ukázat kód</button>`:""}
+        ${kod&&x.aktivni?`<button class="btn small" data-ucmsg="${x.id}">Zkopírovat zprávu</button>`:""}
+        ${x.aktivni?`<button class="btn small ghost" data-uc="zrusit" data-id="${x.id}">Zrušit kód</button>`:(x.kod_enc?`<button class="btn small ghost" data-uc="obnovit" data-id="${x.id}">Obnovit kód</button>`:"")}
+        <button class="btn small ghost" data-ucnew="${x.id}">Nový kód</button>
+        <button class="btn small ${smaz?"warn":"ghost"}" data-ucdel="${x.id}">${smaz?"Opravdu smazat?":"Smazat"}</button>
+      </div>
+      ${!x.kod_enc?`<p class="hint" style="margin:6px 0 0">Tenhle kód vznikl ve starší verzi a nejde zobrazit. Vytvoř nový, nebo učitele smaž a přidej znovu.</p>`:""}</div>`;}).join("")}</div>`;
 }
+function vygenerujKod(){
+  const abc="abcdefghjkmnpqrstuvwxyz23456789";
+  const b=crypto.getRandomValues(new Uint8Array(12));
+  const t=[...b].map(x=>abc[x%abc.length]).join("");
+  return t.slice(0,4)+"-"+t.slice(4,8)+"-"+t.slice(8,12);
+}
+async function sha256hex(t){const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+async function novyKodData(){
+  if(!KEY) throw new Error("Nejdřív odemkni heslo kolektivu.");
+  const kod=vygenerujKod();
+  return {kod,kod_hash:await sha256hex(kod),kod_enc:await zasifruj(kod)};
+}
+async function nactiUcitele(){S.sprava.ucitele=(await api("/ucitele")).ucitele;}
+function zpravaKolegovi(kod){return `Ahoj, tady je přístup do Rekordníku, naší společné appky na výkony v TV.\n\n1. Otevři ${location.origin+location.pathname}\n2. Přidej si ji na plochu (Safari: Sdílet, Přidat na plochu; Android: menu, Přidat na plochu).\n3. Zadej svůj osobní kód: ${kod}\n4. Heslo kolektivu ti řeknu osobně.\n\nKarel`;}
 async function prihlasit(){
   const srv=($("#n-server")?$("#n-server").value.trim():S.server)||VYCHOZI_SERVER;
   const kod=$("#n-kod").value.trim().toLowerCase();
@@ -990,10 +1016,13 @@ M.addEventListener("click",async e=>{
   else if(t.id==="n-rek-ok") await ulozitRekordy();
   else if(t.id==="n-export") exportCSV();
   else if(t.id==="n-sync"){await syncNow();toast(S.syncStav==="ok"?"Synchronizováno.":"Synchronizace selhala: "+S.syncChyba);}
-  else if(t.id==="n-uc-load"){S.sprava.ucitele=(await api("/ucitele")).ucitele;render();}
-  else if(t.id==="n-uc-add"){const jm=$("#n-uc-jm").value.trim();if(!jm){toast("Napiš jméno.");return;}const r=await api("/ucitele",{akce:"pridat",jmeno:jm});S.sprava.novyKod={jmeno:jm,kod:r.kod};S.sprava.ucitele=(await api("/ucitele")).ucitele;render();}
-  else if(t.dataset.uc){const r=await api("/ucitele",{akce:t.dataset.uc,id:t.dataset.id});if(r.kod) S.sprava.novyKod={jmeno:t.dataset.jm,kod:r.kod};S.sprava.ucitele=(await api("/ucitele")).ucitele;render();}
-  else if(t.id==="n-uc-copy"){const n=S.sprava.novyKod;const txt=`Ahoj, tady je přístup do Rekordníku, naší společné appky na výkony v TV.\n\n1. Otevři ${location.origin+location.pathname}\n2. Přidej si ji na plochu (Safari: Sdílet, Přidat na plochu; Android: menu, Přidat na plochu).\n3. Zadej svůj osobní kód: ${n.kod}\n4. Heslo kolektivu ti řeknu osobně.\n\nKarel`;try{await navigator.clipboard.writeText(txt);toast("Zpráva zkopírovaná.");}catch(_){toast("Kopírování nejde, opiš kód ručně.");}}
+  else if(t.id==="n-uc-load"){await nactiUcitele();render();}
+  else if(t.id==="n-uc-add"){const jm=$("#n-uc-jm").value.trim();if(!jm){toast("Napiš jméno.");return;}const k=await novyKodData();const r=await api("/ucitele",{akce:"pridat",jmeno:jm,kod_hash:k.kod_hash,kod_enc:k.kod_enc});S.sprava.kody[r.id]=k.kod;await nactiUcitele();render();toast("Učitel přidán, kód je u jeho jména.");}
+  else if(t.dataset.ucshow){const x=S.sprava.ucitele.find(u=>u.id===t.dataset.ucshow);try{S.sprava.kody[x.id]=await rozsifruj(x.kod_enc);}catch(_){toast("Kód nejde rozšifrovat, vytvoř nový.");return;}render();}
+  else if(t.dataset.ucnew){const k=await novyKodData();await api("/ucitele",{akce:"novy-kod",id:t.dataset.ucnew,kod_hash:k.kod_hash,kod_enc:k.kod_enc});S.sprava.kody[t.dataset.ucnew]=k.kod;await nactiUcitele();render();toast("Nový kód je platný, starý už ne.");}
+  else if(t.dataset.ucdel){const id=t.dataset.ucdel;if(S.sprava.smazArm!==id){S.sprava.smazArm=id;render();return;}S.sprava.smazArm=null;await api("/ucitele",{akce:"smazat",id});delete S.sprava.kody[id];await nactiUcitele();render();toast("Učitel smazán. Jeho dřívější zápisy zůstávají.");}
+  else if(t.dataset.uc){await api("/ucitele",{akce:t.dataset.uc,id:t.dataset.id});await nactiUcitele();render();}
+  else if(t.dataset.ucmsg){const txt=zpravaKolegovi(S.sprava.kody[t.dataset.ucmsg]);try{await navigator.clipboard.writeText(txt);toast("Zpráva zkopírovaná.");}catch(_){toast("Kopírování nejde, opiš kód ručně.");}}
   }catch(err){toast(err.message||String(err));}
 });
 
