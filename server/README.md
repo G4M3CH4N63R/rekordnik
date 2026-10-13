@@ -13,7 +13,13 @@ Cloudflare Worker plus databáze D1, stejně jako u Cvičky. Free tarif stačí 
 Seznam žáků, rekordy a nastavení šifrování smí měnit jen správce. Výkon smí změnit nebo smazat
 jen ten, kdo ho zapsal, nebo správce. Hlídá to Worker, ne jen aplikace.
 
-## Nasazení (jednou)
+## Nasazení
+
+Od 13. 10. 2026 se server nasazuje sám: Cloudflare Workers Builds sleduje větev `main`
+tohoto repa (root directory `server`, deploy command `npx wrangler deploy`). Ruční postup níž
+platí jen pro případ, že automatika selže.
+
+## Ruční nasazení
 
 Databáze `rekordnik` je už založená a má tabulky, `database_id` je vyplněné ve `wrangler.toml`
 (ten soubor je v `.gitignore`, do repa nejde). Zbývají tři kroky:
