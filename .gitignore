@@ -1,6 +1,5 @@
 .DS_Store
 *.csv
 *.xlsx
-server/wrangler.toml
 server/.wrangler/
 node_modules/
