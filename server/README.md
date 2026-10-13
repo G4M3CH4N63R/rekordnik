@@ -16,7 +16,11 @@ jen ten, kdo ho zapsal, nebo správce. Hlídá to Worker, ne jen aplikace.
 ## Nasazení
 
 Od 13. 10. 2026 se server nasazuje sám: Cloudflare Workers Builds sleduje větev `main`
-tohoto repa (root directory `server`, deploy command `npx wrangler deploy`). Ruční postup níž
+tohoto repa (root directory `/`, deploy command `npx wrangler deploy`, konfigurace je ve `wrangler.toml`
+v kořeni repa).
+
+Správce je v tabulce `ucitele` (id `spravce`, otisk jeho kódu), takže server nepotřebuje žádné secrets.
+Secret `SPRAVCE_KOD` je jen nepovinná záloha. Ruční postup níž
 platí jen pro případ, že automatika selže.
 
 ## Ruční nasazení

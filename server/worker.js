@@ -4,7 +4,8 @@
 //
 // Bezpečnost:
 // - Každý učitel má osobní kód. Na serveru je jen jeho SHA-256 otisk v tabulce `ucitele`.
-//   Správce (Karel) má kód v secretu SPRAVCE_KOD a v aplikaci zakládá kódy ostatním.
+//   Správce (Karel) je v tabulce `ucitele` se spravce = 1 (id "spravce"); secret SPRAVCE_KOD je jen
+//   nepovinná záloha. V aplikaci zakládá kódy ostatním.
 //   Kód vzniká v aplikaci správce, server dostane otisk a kopii zašifrovanou heslem kolektivu.
 // - Jména žáků i držitelů rekordů přicházejí zašifrovaná heslem kolektivu (AES-GCM),
 //   server vidí jen bajty. Heslo nikdy neopustí telefon.
@@ -54,7 +55,6 @@ async function kdoJe(req, env) {
 export default {
   async fetch(req, env) {
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: HLAVICKY });
-    if (!env.SPRAVCE_KOD) return odpoved({ chyba: "Na serveru chybí SPRAVCE_KOD, postup je v server/README.md." }, 500);
 
     const cesta = new URL(req.url).pathname.replace(/\/+$/, "") || "/";
     try {
@@ -82,7 +82,7 @@ async function stav(env) {
 }
 
 async function ucitele(env) {
-  const r = await env.DB.prepare("SELECT id, jmeno, spravce, aktivni, vytvoreno, kod_enc FROM ucitele ORDER BY vytvoreno").all();
+  const r = await env.DB.prepare("SELECT id, jmeno, spravce, aktivni, vytvoreno, kod_enc FROM ucitele WHERE id <> 'spravce' ORDER BY vytvoreno").all();
   return { ok: true, ucitele: (r.results || []).map((u) => ({ ...u, spravce: !!u.spravce, aktivni: !!u.aktivni })) };
 }
 
@@ -98,6 +98,7 @@ function kodZTela(telo) {
 async function ucitelZmena(env, telo) {
   const akce = telo && telo.akce;
   const id = String((telo && telo.id) || "");
+  if (id === "spravce") return { chyba: "Účet správce se tady měnit nedá." };
   if (akce === "pridat") {
     const jmeno = String(telo.jmeno || "").trim().slice(0, 80);
     if (!jmeno) return { chyba: "Chybí jméno." };
