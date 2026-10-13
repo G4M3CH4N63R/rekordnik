@@ -1,0 +1,11 @@
+# Konfigurace pro Cloudflare Workers Builds (build běží z kořene repa).
+# Ruční nasazení jde i ze složky server/ přes server/wrangler.toml.
+name = "rekordnik"
+main = "server/worker.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rekordnik"
+database_id = "55ba0b57-cbaa-4c3f-b00b-5856a0ea3bc8"
