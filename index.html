@@ -165,7 +165,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent);background:var(--accent
    Rekordník · společná evidence výkonů v TV, ZŠ Mendelova
    Verze se zvyšuje spolu s CACHE v sw.js.
    ========================================================================== */
-const VERZE = "1.2.0";
+const VERZE = "1.2.1";
 // Adresa Workeru po nasazení. Prázdná = zadává se v Nastavení.
 const VYCHOZI_SERVER = "https://rekordnik.chuanito-bonito.workers.dev";
 
@@ -1014,7 +1014,10 @@ async function ulozitRekordy(){
     if(cur&&cur.zdroj==="appka"&&!better(x.v,cur.v,x.d)) continue;
     const rec={g:x.g,d:x.d,sex:x.sex,v:x.v,z:null,enc:await zasifruj({jm:x.jm}),tr:x.tr,dt:x.dt,zdroj:"nastenka"};
     // Rekord z letošního školního roku se zapíše i jako výkon, aby byl vidět u žáka a v přehledech.
-    if(/^\d{4}-\d\d-\d\d$/.test(x.dt)&&skolniRok(x.dt)===sy&&!DISC[x.d].stara){
+    // Výkon, který už v appce je (stejná disciplína, hodnota a den), se nezakládá podruhé.
+    const uzJe=[...S.vykony.values()].find(v=>v.d===x.d&&v.v===x.v&&v.datum===x.dt&&v.g===x.g&&v.sex===x.sex);
+    if(uzJe){rec.vykon=uzJe.id;rec.z=uzJe.z||null;}
+    else if(/^\d{4}-\d\d-\d\d$/.test(x.dt)&&skolniRok(x.dt)===sy&&!DISC[x.d].stara){
       const vid="n_"+x.g+"_"+x.d+"_"+x.sex+"_"+x.dt;
       let data=null;
       if(x.d==="sta"){
