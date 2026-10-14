@@ -158,6 +158,9 @@ nav.tabs button[aria-current="page"]{color:#fff;background:var(--track)}
 .up{color:var(--accent);font-weight:600}
 .strip svg{width:100%;height:auto;display:block}
 .empty{padding:18px 14px;color:var(--muted);font-size:15px}
+.okbox{background:var(--accent-soft);border:1px solid var(--accent);border-radius:8px;padding:12px 14px;margin-top:12px}
+.okbox b{color:var(--accent);font-family:var(--display);font-size:20px;letter-spacing:.02em}
+.okbox p{margin:4px 0 0}
 .appr{background:var(--gold-soft);border:1px solid var(--gold);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
 .appr .big{font-family:var(--display);font-size:26px;font-weight:700}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:15px;z-index:9;max-width:calc(100% - 32px)}
@@ -197,7 +200,7 @@ nav.tabs button[aria-current="page"]{color:#fff;background:var(--track)}
    Rekordník · společná evidence výkonů v TV, ZŠ Mendelova
    Verze se zvyšuje spolu s CACHE v sw.js.
    ========================================================================== */
-const VERZE = "1.4.1";
+const VERZE = "1.4.2";
 // Adresa Workeru po nasazení. Prázdná = zadává se v Nastavení.
 const VYCHOZI_SERVER = "https://rekordnik.chuanito-bonito.workers.dev";
 
@@ -257,7 +260,7 @@ function parseVal(str,d){
   return rnd(v,DISC[d].u);
 }
 const PH={s:"8,45",min:"1:13,5",cm:"185",m:"24,50"};
-function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2800);}
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,4000);}
 const b64=u8=>{let s="";u8.forEach(b=>s+=String.fromCharCode(b));return btoa(s);};
 const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 
@@ -314,7 +317,7 @@ const S={
   vykony:new Map(),     // id -> {...}
   rekordy:new Map(),    // "g|d|sex" -> {..., jm}
   sys:new Map(),
-  mer:{cls:"",d:"d60",date:dnes(),inp:{},ok:new Set(),sta:{sex:"M",cl:["","","",""],cas:"",ok:false}},
+  mer:{cls:"",d:"d60",date:dnes(),inp:{},ok:new Set(),hotovo:null,sta:{sex:"M",cl:["","","",""],cas:"",ok:false}},
   zaci_ui:{q:"",cls:"",kid:null,stari:false},
   pre:{g:6,sex:"M",d:"d60",sy:skolniRok(dnes())},
   rek:{g:6,q:""},
@@ -534,6 +537,7 @@ function renderMereni(){
       <label class="f">Datum<input type="date" id="m-date" value="${st.date}" max="${dnes()}"></label>
     </div>
     <div style="margin-top:12px">${recCard(g,st.d,"školní rekord "+g+". ročníku",(D.low?"Lepší je menší čas.":"Lepší je větší hodnota.")+" "+(D.u==="min"?"Zapisuj jako minuty:sekundy, třeba 1:13,5.":D.u==="cm"?"Zapisuj v centimetrech, 2,05 appka převede na 205 cm.":""))}</div>
+    ${hotovoH()}
     <div class="list">${rows||'<div class="empty">Ve třídě nejsou žáci.</div>'}</div>
     <div class="savebar"><span class="hint num" id="m-cnt">${filled} ${plural(filled,"výkon","výkony","výkonů")} k uložení</span><button class="btn" id="m-save"${filled?"":" disabled"}>Uložit</button></div>`;
 }
@@ -546,9 +550,23 @@ function hlavaMereni(g,tridy){
       <label class="f">Datum<input type="date" id="m-date" value="${st.date}" max="${dnes()}"></label>
     </div>`;
 }
+function staTr(){const z0=S.zaci.get(S.mer.sta.cl[0]);return z0?(skolniRok(S.mer.date)-z0.coh+1)+"."+z0.pis:"";}
+function dupStafeta(){
+  const st=S.mer.sta, v=parseVal(st.cas,"sta"); if(v==null||isNaN(v)||!st.cl.every(Boolean)) return null;
+  const klic=st.cl.slice().sort().join("|");
+  for(const x of S.vykony.values()) if(x.d==="sta"&&x.datum===S.mer.date&&Math.abs(x.v-v)<0.001&&x.tym&&x.tym.slice().sort().join("|")===klic) return x;
+  return null;
+}
+function ulozeneStafety(g){
+  const st=S.mer, smis=g<=5;
+  const list=[...S.vykony.values()].filter(v=>v.d==="sta"&&v.datum===st.date&&v.tym&&v.tym.some(id=>{const z=S.zaci.get(id);return z&&trida(z)===st.cls;})&&(smis||v.sex===st.sta.sex)).sort((a,b)=>a.v-b.v);
+  return `<h2>Uložené štafety ${esc(st.cls)} <small>${datum(st.date)}</small></h2>
+    <div class="lb">${list.map(v=>`<div class="lbr"><span class="pos num" style="font-size:16px">${v.sex==="X"?"4×":v.sex==="M"?"♂":"♀"}</span><span><span class="hint">${esc(vykonJmeno(v))}${v.autor?", zapsal"+(/a$/.test((v.autor||"").split(" ")[0])?"a":"")+" "+esc(v.autor):""}</span>${smiMenit(v)?`<br><button class="btn small ghost" style="margin-top:4px" data-delv="${v.id}">Smazat</button>`:""}</span><span class="val num">${fmt(v.v,"s")}</span></div>`).join("")||'<div class="empty">Tento den zatím žádná štafeta.</div>'}</div>`;
+}
 function evalStafeta(g){
   const st=S.mer.sta, v=parseVal(st.cas,"sta"); if(v==null) return null;
   if(isNaN(v)) return {c:"chk",t:"Nečitelný čas",necitelny:true};
+  if(dupStafeta()) return {c:"chk",t:"Tahle štafeta se stejným časem už je uložená",necitelny:true,dup:true};
   const r=recOf(g,"sta",staSex(g,st.sex));
   if(!st.ok&&(v<DISC.sta.min||v>DISC.sta.max||(r&&v<r.v*0.85))) return {c:"chk",t:"Zkontroluj čas"};
   if(r&&v<r.v) return {c:"rec",t:"Nový školní rekord"};
@@ -561,6 +579,7 @@ function stafetaChips(g){
   if(ev.c==="chk"&&!ev.necitelny) return `<span class="chip chk">${ev.t}</span><button class="btn small ghost" id="st-ok">Je to správně</button>`;
   return `<span class="chip ${ev.c}">${ev.t}</span>`+(ev.c==="rec"?`<span class="hint">dosavadní rekord ${fmt(r.v,"s")}, půjde ke schválení</span>`:"");
 }
+function hotovoH(){const h=S.mer.hotovo;return h&&h.cls===S.mer.cls&&h.d===S.mer.d?`<div class="okbox" role="status"><b>✓ ${esc(h.nadpis)}</b>${h.radky.map(r=>`<p>${esc(r)}</p>`).join("")}</div>`:"";}
 function renderStafeta(g,tridy){
   const st=S.mer, sta=st.sta, smis=g<=5;
   const kids=zaciTridy(st.cls).filter(z=>smis||z.sex===sta.sex);
@@ -574,16 +593,20 @@ function renderStafeta(g,tridy){
       <div class="row" style="margin-top:10px;align-items:flex-end"><label class="f">Čas štafety<input class="inp" style="width:100%" id="st-cas" inputmode="decimal" autocomplete="off" placeholder="38,40" value="${esc(sta.cas)}"></label></div>
       <div class="chips" id="st-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${stafetaChips(g)}</div>
       <div class="btns"><button class="btn" id="st-save"${plna&&v!=null&&!isNaN(v)?"":" disabled"}>Uložit štafetu</button></div>
-      ${sta.cl.some(Boolean)&&new Set(sta.cl.filter(Boolean)).size<sta.cl.filter(Boolean).length?'<p class="hint err">Jeden žák je ve štafetě dvakrát.</p>':""}</div>`;
+      ${sta.cl.some(Boolean)&&new Set(sta.cl.filter(Boolean)).size<sta.cl.filter(Boolean).length?'<p class="hint err">Jeden žák je ve štafetě dvakrát.</p>':""}</div>
+    ${hotovoH()}
+    ${ulozeneStafety(g)}`;
 }
 async function saveStafeta(){
   const st=S.mer, sta=st.sta, g=parseInt(st.cls), sy=skolniRok(st.date);
   const v=parseVal(sta.cas,"sta"), ev=evalStafeta(g);
+  if(dupStafeta()){toast("Tahle štafeta už je uložená.");return;}
   if(v==null||isNaN(v)||(ev&&ev.c==="chk")){toast("Zkontroluj čas štafety.");return;}
   const z0=S.zaci.get(sta.cl[0]);
   const id=uid("v");
   const data={z:null,tym:sta.cl.slice(),d:"sta",v,g:sy-z0.coh+1,tr:(sy-z0.coh+1)+"."+z0.pis,sex:staSex(g,sta.sex),datum:st.date,t:Date.now()};
   await zapis("vykony",id,data); S.vykony.set(id,{...data,id,autor:S.ja&&S.ja.jmeno,autorId:S.ja&&S.ja.id});
+  st.hotovo={cls:st.cls,d:"sta",nadpis:"Štafeta uložena",radky:[`${fmt(v,"s")}: ${sta.cl.map(id=>jmeno(S.zaci.get(id))).join(", ")}`,ev&&ev.c==="rec"?"Je to nový školní rekord, čeká na schválení.":"Najdeš ji v seznamu níž i v Přehledech."]};
   st.sta={sex:sta.sex,cl:["","","",""],cas:"",ok:false};
   renderTabs(); render();
   toast("Štafeta uložena"+(ev&&ev.c==="rec"?", rekord čeká na schválení.":"."));
@@ -595,18 +618,21 @@ function updateRow(id){
   const n=filledCount(); $("#m-cnt").textContent=`${n} ${plural(n,"výkon","výkony","výkonů")} k uložení`; $("#m-save").disabled=!n;
 }
 async function saveMereni(){
-  const st=S.mer, g=parseInt(st.cls); let n=0,recs=0,chk=0;
+  const st=S.mer, g=parseInt(st.cls); let n=0,recs=0,chk=0,dup=0; const jmena=[];
   const sy=skolniRok(st.date);
   for(const z of zaciTridy(st.cls)){
     const v=parseVal(st.inp[z.id]||"",st.d); if(v==null) continue;
     const ev=evalVal(z,st.d,v,g,st.ok.has(z.id));
     if(isNaN(v)||(ev&&ev.c==="chk")){chk++;continue;}
+    if(vykonyZaka(z.id,st.d).some(x=>x.datum===st.date&&Math.abs(x.v-v)<0.001)){delete st.inp[z.id];dup++;continue;}
     if(ev&&ev.c==="rec") recs++;
+    jmena.push(jmeno(z)+" "+fmt(v,DISC[st.d].u));
     const id=uid("v");
     const data={z:z.id,d:st.d,v,g:sy-z.coh+1,tr:(sy-z.coh+1)+"."+z.pis,sex:z.sex,datum:st.date,t:Date.now()};
     await zapis("vykony",id,data); S.vykony.set(id,{...data,id,autor:S.ja&&S.ja.jmeno,autorId:S.ja&&S.ja.id});
     delete st.inp[z.id]; st.ok.delete(z.id); n++;
   }
+  st.hotovo=n||dup?{cls:st.cls,d:st.d,nadpis:n?`Uloženo: ${n} ${plural(n,"výkon","výkony","výkonů")}, ${dn(st.d,g)}, ${st.cls}`:"Nic nového k uložení",radky:[jmena.join(", ")||"",recs?`${recs} ${plural(recs,"nový rekord čeká","nové rekordy čekají","nových rekordů čeká")} na schválení.`:"",dup?`${dup} ${plural(dup,"výkon už byl","výkony už byly","výkonů už bylo")} uložen${dup===1?"ý":"é"} dřív, podruhé se nezapsal${dup===1?"":"y"}.`:"",chk?`${chk} ${plural(chk,"výkon zůstal","výkony zůstaly","výkonů zůstalo")} v poli ke kontrole.`:""].filter(Boolean)}:null;
   renderTabs(); render();
   toast(`Uloženo: ${n} ${plural(n,"výkon","výkony","výkonů")}`+(recs?`, ${recs} ${plural(recs,"rekord čeká","rekordy čekají","rekordů čeká")} na schválení`:"")+(chk?`. ${chk} ${plural(chk,"výkon zůstal","výkony zůstaly","výkonů zůstalo")} v poli ke kontrole.`:""));
 }
@@ -1203,7 +1229,7 @@ M.addEventListener("change",async e=>{
 });
 M.addEventListener("input",e=>{
   const t=e.target;
-  if(t.dataset.kid){S.mer.inp[t.dataset.kid]=t.value;S.mer.ok.delete(t.dataset.kid);updateRow(t.dataset.kid);}
+  if(t.dataset.kid){if(S.mer.hotovo){S.mer.hotovo=null;const b=M.querySelector(".okbox");if(b)b.remove();}S.mer.inp[t.dataset.kid]=t.value;S.mer.ok.delete(t.dataset.kid);updateRow(t.dataset.kid);}
   else if(t.id==="st-cas"){S.mer.sta.cas=t.value;S.mer.sta.ok=false;const g=parseInt(S.mer.cls);$("#st-chips").innerHTML=stafetaChips(g);const v=parseVal(t.value,"sta");const sta=S.mer.sta;$("#st-save").disabled=!(sta.cl.every(Boolean)&&new Set(sta.cl).size===4&&v!=null&&!isNaN(v));}
   else if(t.id==="r-q"){S.rek.q=t.value;const pos=t.selectionStart;render();const n=$("#r-q");n.focus();try{n.setSelectionRange(pos,pos);}catch(_){}}
   else if(t.id==="z-q"){S.zaci_ui.q=t.value;const pos=t.selectionStart;render();const n=$("#z-q");n.focus();try{n.setSelectionRange(pos,pos);}catch(_){}}
