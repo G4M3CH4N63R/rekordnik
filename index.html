@@ -165,7 +165,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent);background:var(--accent
    Rekordník · společná evidence výkonů v TV, ZŠ Mendelova
    Verze se zvyšuje spolu s CACHE v sw.js.
    ========================================================================== */
-const VERZE = "1.2.1";
+const VERZE = "1.3.0";
 // Adresa Workeru po nasazení. Prázdná = zadává se v Nastavení.
 const VYCHOZI_SERVER = "https://rekordnik.chuanito-bonito.workers.dev";
 
@@ -633,7 +633,8 @@ function strip(groups,d){
     <text x="${W-Rr}" y="${yb}" font-size="12" text-anchor="end" fill="var(--muted)">lepší ${fmt(rnd(D.low?mn:mx,D.u),D.u)}</text></svg>`;
 }
 function renderPrehledy(){
-  const st=S.pre; if(!GDi(st.g).includes(st.d)) st.d=GDi(st.g)[0];
+  const st=S.pre; if(!GD[st.g].includes(st.d)) st.d=GD[st.g][0];
+  if(st.d==="sta") return renderPrehledStafet();
   const D=DISC[st.d], g=st.g, sy=st.sy;
   const roky=new Set([SY_NOW()]);for(const v of S.vykony.values()) roky.add(skolniRok(v.datum));
   const vs=[...S.vykony.values()].filter(v=>v.d===st.d&&v.g===g&&v.sex===st.sex&&skolniRok(v.datum)===sy);
@@ -657,7 +658,7 @@ function renderPrehledy(){
   $("#main").innerHTML=`<h1>Přehledy</h1>
     <div class="row">
       <label class="f">Ročník<select id="p-g">${[1,2,3,4,5,6,7,8,9].map(x=>`<option value="${x}"${x===g?" selected":""}>${x}. třída</option>`).join("")}</select></label>
-      <label class="f">Disciplína<select id="p-d">${GDi(g).map(d=>`<option value="${d}"${d===st.d?" selected":""}>${esc(dn(d,g))}</option>`).join("")}</select></label>
+      <label class="f">Disciplína<select id="p-d">${GD[g].map(d=>`<option value="${d}"${d===st.d?" selected":""}>${esc(dn(d,g))}</option>`).join("")}</select></label>
       <label class="f">Školní rok<select id="p-sy">${[...roky].sort((a,b)=>b-a).map(y=>`<option value="${y}"${y===sy?" selected":""}>${syLabel(y)}</option>`).join("")}</select></label>
     </div>
     <div style="margin-top:10px" class="seg" role="group" aria-label="Pohlaví"><button data-psex="M" aria-pressed="${st.sex==="M"}">Kluci</button><button data-psex="F" aria-pressed="${st.sex==="F"}">Holky</button></div>
@@ -668,6 +669,24 @@ function renderPrehledy(){
     <p class="hint" style="margin-top:-4px">Nejlepší výkon z jara proti nejlepšímu z podzimu (září až leden).</p>
     <div class="lb">${impH}</div>
     ${groups.length?`<h2>Třídy vedle sebe</h2><div class="panel strip">${strip(groups,st.d)}<p class="hint" style="margin:6px 0 0">Každá tečka je jeden žák, svislá čárka průměr třídy.</p></div>`:""}`;
+}
+
+function renderPrehledStafet(){
+  const st=S.pre, g=st.g, sy=st.sy, smis=g<=5, sex=smis?"X":st.sex;
+  const roky=new Set([SY_NOW()]);for(const v of S.vykony.values()) roky.add(skolniRok(v.datum));
+  const vs=[...S.vykony.values()].filter(v=>v.d==="sta"&&v.g===g&&v.sex===sex&&skolniRok(v.datum)===sy).sort((a,b)=>a.v-b.v);
+  const r=recOf(g,"sta",sex);
+  const lb=vs.slice(0,15).map((v,i)=>`<div class="lbr${i===0?" p1":""}"><span class="pos num">${i+1}.</span><span><b>${esc(v.tr)}</b><br><span class="hint">${esc(vykonJmeno(v))}, ${datum(v.datum)}</span></span><span class="val num">${fmt(v.v,"s")}</span></div>`).join("");
+  $("#main").innerHTML=`<h1>Přehledy</h1>
+    <div class="row">
+      <label class="f">Ročník<select id="p-g">${[1,2,3,4,5,6,7,8,9].map(x=>`<option value="${x}"${x===g?" selected":""}>${x}. třída</option>`).join("")}</select></label>
+      <label class="f">Disciplína<select id="p-d">${GD[g].map(d=>`<option value="${d}"${d===st.d?" selected":""}>${esc(dn(d,g))}</option>`).join("")}</select></label>
+      <label class="f">Školní rok<select id="p-sy">${[...roky].sort((a,b)=>b-a).map(y=>`<option value="${y}"${y===sy?" selected":""}>${syLabel(y)}</option>`).join("")}</select></label>
+    </div>
+    ${smis?"":`<div style="margin-top:10px" class="seg" role="group" aria-label="Pohlaví"><button data-psex="M" aria-pressed="${st.sex==="M"}">Kluci</button><button data-psex="F" aria-pressed="${st.sex==="F"}">Holky</button></div>`}
+    <h2>Pořadí štafet</h2>
+    <p class="hint" style="margin-top:-4px">${esc(dn("sta",g))}${smis?"":", "+(st.sex==="M"?"kluci":"holky")}, ${g}. třída ve školním roce ${syLabel(sy)}.${r?" Školní rekord "+fmt(r.v,"s")+".":""}</p>
+    <div class="lb">${lb||'<div class="empty">Zatím žádná štafeta.</div>'}</div>`;
 }
 
 /* ---------- Rekordy ---------- */
@@ -684,6 +703,13 @@ function kandidati(){
   return [...best.values()].sort((a,b)=>b.datum.localeCompare(a.datum));
 }
 function radekNastenka(v){return `Nový rekord: ${vykonJmeno(v)}, ${v.tr}, ${dn(v.d,v.g)}, ${fmt(v.v,DISC[v.d].u)}, ${datum(v.datum)}`;}
+function letosniRekordy(){
+  const sy=SY_NOW();
+  const list=[...S.rekordy.values()].filter(r=>r.dt&&/^\d{4}-\d\d-\d\d$/.test(r.dt)&&skolniRok(r.dt)===sy&&!DISC[r.d].stara).sort((a,b)=>b.dt.localeCompare(a.dt));
+  if(!list.length) return "";
+  const kat=r=>r.sex==="X"?"":r.sex==="M"?", kluci":", holky";
+  return `<h2>Letošní rekordy</h2><div class="lb">${list.map(r=>`<div class="lbr"><span class="pos num" style="font-size:16px">${r.g}.</span><span><b>${esc(dn(r.d,r.g))}</b><span class="hint">${kat(r)}</span><br><span class="hint">${esc(r.jm||"")}${r.tr?", "+esc(r.tr):""}, ${datum(r.dt)}</span></span><span class="val num">${fmt(r.v,DISC[r.d].u)}</span></div>`).join("")}</div>`;
+}
 function renderRekordy(){
   const g=S.rek.g; const spr=S.ja&&S.ja.spravce;
   const pend=kandidati().map(v=>{const D=DISC[v.d],r=recOf(v.g,v.d,v.sex);return `<div class="appr">
@@ -709,6 +735,7 @@ function renderRekordy(){
   $("#main").innerHTML=`<h1>Rekordy</h1>
     ${pend?`<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px">${pend}</div>`:""}
     ${poslH}
+    ${letosniRekordy()}
     <h2>Školní rekordy podle ročníku</h2>
     <div class="gradechips" role="group" aria-label="Ročník">${[1,2,3,4,5,6,7,8,9].map(x=>`<button data-rg="${x}" aria-pressed="${x===g}">${x}.</button>`).join("")}</div>
     <div class="tw" style="margin-top:10px"><table class="rt"><thead><tr><th>Disciplína</th><th><span class="sx M"></span>Kluci</th><th><span class="sx F"></span>Holky</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -761,6 +788,8 @@ function renderNastaveni(){
       <input type="file" id="n-zaci" accept=".csv,.xlsx,.xls,text/csv"><div id="n-zaci-out"></div></div>
     <div class="panel"><b>Rekordy z nástěnky</b><p class="hint">Nahraj Rekordmani.xlsx. Appka z ní vezme rekordy všech ročníků i se jmény držitelů (zašifrovaně). Rekordy schválené v appce se nepřepíšou, pokud jsou lepší.</p>
       <input type="file" id="n-rek" accept=".xlsx"><div id="n-rek-out"></div></div>
+    <div class="panel"><b>Výkony z tabulky</b><p class="hint">Hromadné nahrání výkonů naměřených mimo appku (CSV nebo XLSX se sloupci datum, třída, příjmení, jméno, disciplína, výkon). Stejný tvar má export výkonů. Výkony, které už v appce jsou, se nezapíšou podruhé, podezřelé hodnoty se vynechají.</p>
+      <input type="file" id="n-vyk" accept=".csv,.xlsx,text/csv"><div id="n-vyk-out"></div></div>
     <div class="panel"><b>Učitelé</b><p class="hint">Každý učitel má vlastní kód. Kód se dá kdykoli znovu zobrazit tlačítkem Ukázat kód, zprávu s ním pošli kolegovi. Heslo kolektivu mu řekni zvlášť.</p>
       <div id="n-uc">${S.sprava.ucitele?renderUcitele():'<button class="btn small ghost" id="n-uc-load">Načíst učitele</button>'}</div>
       <div class="row" style="margin-top:10px"><label class="f">Jméno nového učitele<input type="text" id="n-uc-jm" placeholder="Kateřina Kultová"></label></div>
@@ -1039,6 +1068,48 @@ async function ulozitRekordy(){
   toast(`Uloženo ${n} rekordů z nástěnky, z toho ${letos} letošních jako výkony u žáků.`+(nesp.length?` Nespárováno se seznamem žáků: ${nesp.join("; ")}.`:""));
 }
 
+/* ---------- import výkonů z tabulky ---------- */
+function parseDatum(x){
+  x=String(x||"").trim(); let m=x.match(/^(\d{4})-(\d\d)-(\d\d)/); if(m) return m[1]+"-"+m[2]+"-"+m[3];
+  m=x.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{2,4})$/); if(m){let y=+m[3];if(y<100)y+=2000;return y+"-"+String(m[2]).padStart(2,"0")+"-"+String(m[1]).padStart(2,"0");}
+  return null;
+}
+async function importVykonu(file){
+  const out=$("#n-vyk-out"); out.innerHTML='<p class="hint">Načítám…</p>';
+  try{
+    const rows=await nactiTabulku(file);
+    let hi=-1,h=[];
+    for(let i=0;i<Math.min(10,rows.length);i++){h=rows[i].map(norm);if(h.some(x=>x.startsWith("disciplin"))&&h.some(x=>x.startsWith("vykon"))){hi=i;break;}}
+    if(hi<0){out.innerHTML='<p class="err">Nenašel jsem sloupce disciplína a výkon.</p>';return;}
+    const col=k=>h.findIndex(x=>k.some(kk=>x.startsWith(kk)));
+    const c={dt:col(["datum"]),tr:col(["trida"]),p:col(["prijmeni"]),j:col(["jmeno"]),d:col(["disciplin"]),v:col(["vykon"])};
+    const ok=[],chyby=[];
+    for(const r of rows.slice(hi+1)){
+      const jm=(String(r[c.j]||"")+" "+String(r[c.p]||"")).trim(), popis=jm+" "+(r[c.tr]||"")+", "+(r[c.d]||"")+" "+(r[c.v]||"");
+      const d=mapDisc(r[c.d]); const datum=parseDatum(r[c.dt]);
+      if(!d||d==="sta"){chyby.push(popis+" (neznámá disciplína)");continue;}
+      if(!datum){chyby.push(popis+" (chybí datum)");continue;}
+      const t=parseTrida(r[c.tr]); const z=najdiZaka(jm,t?t.g+"."+t.pis:"");
+      if(!z){chyby.push(popis+" (žák nenalezen)");continue;}
+      const v=parseVal(r[c.v],d); if(v==null||isNaN(v)){chyby.push(popis+" (nečitelný výkon)");continue;}
+      const sy=skolniRok(datum), g=sy-z.coh+1;
+      const ev=evalVal(z,d,v,g);
+      if(ev&&ev.c==="chk"){chyby.push(popis+" (podezřelá hodnota, zkontroluj a zapiš ručně)");continue;}
+      if([...S.vykony.values(),...ok].some(x=>x.z===z.id&&x.d===d&&x.v===v&&x.datum===datum)) continue;
+      ok.push({z:z.id,d,v,g,tr:g+"."+z.pis,sex:z.sex,datum,zdroj:"import",t:Date.now()});
+    }
+    S._importVyk=ok;
+    out.innerHTML=`<p style="margin-top:10px"><b>${ok.length} ${plural(ok.length,"výkon","výkony","výkonů")}</b> připraveno k uložení.</p>
+      ${chyby.length?`<p class="hint">Vynechám ${chyby.length}:</p><ul class="hint" style="margin:0 0 8px;padding-left:18px">${chyby.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+      ${ok.length?'<div class="btns"><button class="btn" id="n-vyk-ok">Uložit výkony</button></div>':""}`;
+  }catch(e){out.innerHTML=`<p class="err">${esc(e.message)}</p>`;}
+}
+async function ulozitVykony(){
+  const list=S._importVyk; if(!list) return;
+  for(const data of list){const id=uid("v");await zapis("vykony",id,data);S.vykony.set(id,{...data,id,autor:S.ja&&S.ja.jmeno,autorId:S.ja&&S.ja.id});}
+  S._importVyk=null; renderTabs(); render(); toast(`Uloženo ${list.length} ${plural(list.length,"výkon","výkony","výkonů")}.`);
+}
+
 /* ---------- export ---------- */
 function exportCSV(){
   const rows=[["datum","třída","příjmení","jméno","pohlaví","disciplína","výkon","jednotka","zapsal"]];
@@ -1082,6 +1153,7 @@ M.addEventListener("change",async e=>{
   else if(t.id==="p-sy"){S.pre.sy=+t.value;render();}
   else if(t.id==="n-zaci"&&t.files[0]) importZaku(t.files[0]);
   else if(t.id==="n-rek"&&t.files[0]) importRekordu(t.files[0]);
+  else if(t.id==="n-vyk"&&t.files[0]) importVykonu(t.files[0]);
 });
 M.addEventListener("input",e=>{
   const t=e.target;
@@ -1123,6 +1195,7 @@ M.addEventListener("click",async e=>{
   else if(t.id==="n-logout"){if(t.dataset.arm){await odhlasit();}else{t.dataset.arm="1";t.textContent="Opravdu? Neodeslané změny se ztratí";t.classList.add("warn");}}
   else if(t.id==="n-zaci-ok") await ulozitZaky();
   else if(t.id==="n-rek-ok") await ulozitRekordy();
+  else if(t.id==="n-vyk-ok") await ulozitVykony();
   else if(t.id==="n-export") exportCSV();
   else if(t.id==="n-sync"){await syncNow();toast(S.syncStav==="ok"?"Synchronizováno.":"Synchronizace selhala: "+S.syncChyba);}
   else if(t.id==="n-uc-load"){await nactiUcitele();render();}
