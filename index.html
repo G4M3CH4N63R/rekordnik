@@ -197,7 +197,7 @@ nav.tabs button[aria-current="page"]{color:#fff;background:var(--track)}
    Rekordník · společná evidence výkonů v TV, ZŠ Mendelova
    Verze se zvyšuje spolu s CACHE v sw.js.
    ========================================================================== */
-const VERZE = "1.4.0";
+const VERZE = "1.4.1";
 // Adresa Workeru po nasazení. Prázdná = zadává se v Nastavení.
 const VYCHOZI_SERVER = "https://rekordnik.chuanito-bonito.workers.dev";
 
@@ -218,11 +218,11 @@ const DISC = {
   sta:{n:"Štafeta 4×60 m",u:"s",low:true,min:25,max:90,tym:true}
 };
 const PET="Vrh petanque koulí", K3="Vrh koulí 3 kg", K34="Vrh koulí (holky 3 kg, kluci 4 kg)";
-const NAME_OVR={1:{spl:"Šplh 1/2 tyče",kou:PET},2:{kou:PET},3:{kou:PET},4:{kou:PET},5:{kou:PET},6:{kou:K3},7:{kou:K3},8:{kou:K34},9:{kou:K34}};
+const NAME_OVR={1:{spl:"Šplh 1/2 tyče",kou:PET,d1000:"1000 m (do 2025/26)"},2:{kou:PET},3:{kou:PET},4:{kou:PET},5:{kou:PET},6:{kou:K3},7:{kou:K3},8:{kou:K34},9:{kou:K34}};
 const dn=(d,g)=>d==="sta"&&g<=5?"Smíšená štafeta 4×60 m":(NAME_OVR[g]&&NAME_OVR[g][d])||DISC[d].n;
 const GD={};
 for(let g=1;g<=9;g++){
-  GD[g]=["d60","d200","d400",(g>=2&&g<=4)?"d500":"d1000","zm","dal","vys","rak","kou","spl","sta"];
+  GD[g]=["d60","d200","d400",g<=4?"d500":"d1000","zm","dal","vys","rak","kou","spl","sta"];
 }
 const better=(a,b,d)=>DISC[d].low?a<b:a>b;
 const GDi=g=>GD[g].filter(d=>!DISC[d].tym);   // disciplíny jednotlivců
@@ -741,7 +741,7 @@ function kandidati(){
   // nejlepší neschválený výkon v každé kategorii, který je lepší než rekord
   const best=new Map();
   for(const v of S.vykony.values()){
-    if(v.zamitnuto||v.schvaleno||DISC[v.d].stara) continue;
+    if(v.zamitnuto||v.schvaleno||DISC[v.d].stara||!(GD[v.g]||[]).includes(v.d)) continue;
     const k=v.g+"|"+v.d+"|"+v.sex; const r=S.rekordy.get(k);
     if(r&&r.vykon===v.id) continue;
     if(r&&!better(v.v,r.v,v.d)) continue;
@@ -771,7 +771,9 @@ function renderRekordy(){
   }
   const fresh=[...S.rekordy.values()].filter(r=>jeCerstvy(r.dt)&&!DISC[r.d].stara).sort((a,b)=>b.dt.localeCompare(a.dt)).slice(0,12);
   const freshH=fresh.map(r=>`<button class="fcard" data-rg="${r.g}"><span class="d">${r.g}. ročník · ${esc(dn(r.d,r.g))}</span><span class="n">${esc(r.d==="sta"?(r.tr||"")+" (štafeta)":r.jm||"")}</span><span class="v num">${fmt(r.v,DISC[r.d].u)}</span><span class="d">${datum(r.dt)}</span></button>`).join("");
-  const discs=[...GD[g],...(S.rekordy.has(g+"|mic|M")||S.rekordy.has(g+"|mic|F")?["mic"]:[])];
+  // staré disciplíny ročníku (třeba míček nebo 1000 m v 1. třídě) zůstanou vidět na konci
+  const stare=Object.keys(DISC).filter(d=>!GD[g].includes(d)&&["M","F","X"].some(x=>S.rekordy.has(g+"|"+d+"|"+x)));
+  const discs=[...GD[g],...stare];
   const near=[];
   for(const z of S.zaci.values()){ if(z.akt===false) continue; const gg=rocnik(z); if(!GD[gg]) continue;
     for(const d of GDi(gg)){ const b=best(vykonyZaka(z.id,d).filter(v=>v.g===gg),d); const r=recOf(gg,d,z.sex); if(!b||!r) continue;
