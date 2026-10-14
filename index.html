@@ -200,7 +200,7 @@ nav.tabs button[aria-current="page"]{color:#fff;background:var(--track)}
    Rekordník · společná evidence výkonů v TV, ZŠ Mendelova
    Verze se zvyšuje spolu s CACHE v sw.js.
    ========================================================================== */
-const VERZE = "1.4.2";
+const VERZE = "1.4.3";
 // Adresa Workeru po nasazení. Prázdná = zadává se v Nastavení.
 const VYCHOZI_SERVER = "https://rekordnik.chuanito-bonito.workers.dev";
 
@@ -524,9 +524,10 @@ function renderMereni(){
   const rows=kids.map(z=>{
     const raw=st.inp[z.id]||""; const v=parseVal(raw,st.d); if(v!=null&&!isNaN(v)) filled++;
     const ev=evalVal(z,st.d,v,g,st.ok.has(z.id)); const pb=best(vykonyZaka(z.id,st.d),st.d);
+    const dnesU=vykonyZaka(z.id,st.d).filter(x=>x.datum===st.date).map(x=>fmt(x.v,D.u));
     return `<div class="kid${ev&&ev.c==="rec"?" isrec":""}" id="row-${z.id}">
       <div><div class="nm"><span class="sx ${z.sex}"></span>${esc(jmeno(z))}</div>
-      <div class="sub num">${pb?"osobní rekord "+fmt(pb.v,D.u)+(pb.g!==g?" ("+pb.g+". tř.)":""):"zatím bez měření"}</div></div>
+      <div class="sub num">${pb?"osobní rekord "+fmt(pb.v,D.u)+(pb.g!==g?" ("+pb.g+". tř.)":""):"zatím bez měření"}${dnesU.length?` · <span class="up">uloženo ${dnesU.join(", ")}</span>`:""}</div></div>
       <input class="inp" id="in-${z.id}" data-kid="${z.id}" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="${PH[D.u]}" value="${esc(raw)}" aria-label="Výkon: ${esc(jmeno(z))}">
       <div class="chips" id="ch-${z.id}">${chipsHtml(z,ev)}</div></div>`;}).join("");
   $("#main").innerHTML=`
@@ -539,7 +540,8 @@ function renderMereni(){
     <div style="margin-top:12px">${recCard(g,st.d,"školní rekord "+g+". ročníku",(D.low?"Lepší je menší čas.":"Lepší je větší hodnota.")+" "+(D.u==="min"?"Zapisuj jako minuty:sekundy, třeba 1:13,5.":D.u==="cm"?"Zapisuj v centimetrech, 2,05 appka převede na 205 cm.":""))}</div>
     ${hotovoH()}
     <div class="list">${rows||'<div class="empty">Ve třídě nejsou žáci.</div>'}</div>
-    <div class="savebar"><span class="hint num" id="m-cnt">${filled} ${plural(filled,"výkon","výkony","výkonů")} k uložení</span><button class="btn" id="m-save"${filled?"":" disabled"}>Uložit</button></div>`;
+    <div class="savebar"><span class="hint num" id="m-cnt">${filled} ${plural(filled,"výkon","výkony","výkonů")} k uložení</span><button class="btn" id="m-save"${filled?"":" disabled"}>Uložit</button></div>
+    ${ulozeneVykony()}`;
 }
 function hlavaMereni(g,tridy){
   const st=S.mer;
@@ -556,6 +558,12 @@ function dupStafeta(){
   const klic=st.cl.slice().sort().join("|");
   for(const x of S.vykony.values()) if(x.d==="sta"&&x.datum===S.mer.date&&Math.abs(x.v-v)<0.001&&x.tym&&x.tym.slice().sort().join("|")===klic) return x;
   return null;
+}
+function ulozeneVykony(){
+  const st=S.mer, D=DISC[st.d], ids=new Set(zaciTridy(st.cls).map(z=>z.id));
+  const list=[...S.vykony.values()].filter(v=>v.d===st.d&&v.datum===st.date&&ids.has(v.z)).sort((a,b)=>byName(S.zaci.get(a.z),S.zaci.get(b.z))||(a.t||0)-(b.t||0));
+  return `<h2>Uložené výkony ${esc(st.cls)} <small>${esc(dn(st.d,parseInt(st.cls)))}, ${datum(st.date)}</small></h2>
+    <div class="lb">${list.map(v=>{const z=S.zaci.get(v.z);return `<div class="lbr"><span class="pos num" style="font-size:18px"><span class="sx ${z.sex}"></span></span><span><b>${esc(jmeno(z))}</b>${v.autor?`<br><span class="hint">zapsal${/a$/.test((v.autor||"").split(" ")[0])?"a":""} ${esc(v.autor)}</span>`:""}${smiMenit(v)?`<br><button class="btn small ghost" style="margin-top:4px" data-delv="${v.id}">Smazat</button>`:""}</span><span class="val num">${fmt(v.v,D.u)}</span></div>`;}).join("")||'<div class="empty">V tento den tu zatím nic uloženého není.</div>'}</div>`;
 }
 function ulozeneStafety(g){
   const st=S.mer, smis=g<=5;
@@ -1254,7 +1262,7 @@ M.addEventListener("click",async e=>{
   else if(t.dataset.sex) await zmenitPohlavi(t.dataset.sex);
   else if(t.dataset.delv){
     if(_delArm!==t.dataset.delv){_delArm=t.dataset.delv;t.textContent="Opravdu smazat?";t.classList.add("warn");return;}
-    _delArm=null; const id=t.dataset.delv; await zapis("vykony",id,null); S.vykony.delete(id); render(); toast("Smazáno.");
+    _delArm=null; const id=t.dataset.delv; await zapis("vykony",id,null); S.vykony.delete(id); S.mer.hotovo=null; renderTabs(); render(); toast("Smazáno.");
   }
   else if(t.dataset.psex){S.pre.sex=t.dataset.psex;render();}
   else if(t.dataset.rg){S.rek.g=+t.dataset.rg;const f=t.classList.contains("fcard");if(f) S.rek.q="";render();if(f){const sec=$("#gradeSec");if(sec) sec.scrollIntoView({behavior:"smooth",block:"start"});}}
