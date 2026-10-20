@@ -200,7 +200,7 @@ nav.tabs button[aria-current="page"]{color:#fff;background:var(--track)}
    Rekordník · společná evidence výkonů v TV, ZŠ Mendelova
    Verze se zvyšuje spolu s CACHE v sw.js.
    ========================================================================== */
-const VERZE = "1.4.3";
+const VERZE = "1.5.0";
 // Adresa Workeru po nasazení. Prázdná = zadává se v Nastavení.
 const VYCHOZI_SERVER = "https://rekordnik.chuanito-bonito.workers.dev";
 
@@ -368,6 +368,49 @@ async function zapis(store,rid,data){
   await dbPut("fronta",{id,store,rid,data,updatedAt:t});
   naplanujSync(2500);
 }
+/* ---------- upozornění ---------- */
+const PUSH={stav:"?",endpoint:""};
+const pushPodpora=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window&&window.isSecureContext;
+const jeIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const naPlose=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+async function pushZjisti(){
+  if(!pushPodpora()){PUSH.stav="nejde";return;}
+  try{const reg=await Promise.race([navigator.serviceWorker.ready,new Promise(ok=>setTimeout(()=>ok(null),5000))]);
+    if(!reg){PUSH.stav="nejde";return;}
+    const sub=await reg.pushManager.getSubscription();
+    PUSH.endpoint=sub?sub.endpoint:"";PUSH.stav=sub&&Notification.permission==="granted"?"zapnuto":Notification.permission==="denied"?"zakazano":"vypnuto";}
+  catch(_){PUSH.stav="nejde";}
+}
+function b64uNaBajty(t){t=t.replace(/-/g,"+").replace(/_/g,"/");while(t.length%4)t+="=";return Uint8Array.from(atob(t),c=>c.charCodeAt(0));}
+async function pushZapnout(){
+  const perm=await Notification.requestPermission();
+  if(perm!=="granted"){await pushZjisti();render();toast("Upozornění nejsou povolená. Povol je v nastavení telefonu.");return;}
+  const reg=await navigator.serviceWorker.ready;
+  const {klic}=await api("/push/klic");
+  let sub=await reg.pushManager.getSubscription();
+  if(sub&&sub.options&&sub.options.applicationServerKey){const k=new Uint8Array(sub.options.applicationServerKey);const n=b64uNaBajty(klic);if(k.length!==n.length||k.some((x,i)=>x!==n[i])){await sub.unsubscribe();sub=null;}}
+  if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uNaBajty(klic)});
+  await api("/push/prihlasit",{sub:sub.toJSON()});
+  await pushZjisti();render();toast("Upozornění zapnutá.");
+}
+async function pushVypnout(){
+  const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();
+  if(sub){try{await api("/push/odhlasit",{endpoint:sub.endpoint});}catch(_){}await sub.unsubscribe();}
+  await pushZjisti();render();toast("Upozornění vypnutá.");
+}
+function pushPanel(){
+  const spr=S.ja&&S.ja.spravce;
+  const co=spr?"Přijde ti upozornění, když někdo zapíše výkon lepší než školní rekord, a rekord čeká na schválení.":"Přijde ti upozornění, když správce schválí rekord, který jsi zapsal.";
+  let obsah;
+  if(PUSH.stav==="?") obsah='<p class="hint">Zjišťuji…</p>';
+  else if(!pushPodpora()&&jeIOS()&&!naPlose()) obsah='<p>Na iPhonu fungují upozornění jen v appce přidané na plochu. Přidej si Rekordník na plochu (Safari, Sdílet, Přidat na plochu) a zapni je tam.</p>';
+  else if(PUSH.stav==="nejde") obsah='<p>Tenhle prohlížeč upozornění neumí. Na iPhonu je potřeba iOS 16.4 nebo novější a appka přidaná na plochu.</p>';
+  else if(PUSH.stav==="zakazano") obsah='<p>Upozornění jsou pro Rekordník v telefonu zakázaná. Povol je v nastavení telefonu (Oznámení, Rekordník) a vrať se sem.</p>';
+  else if(PUSH.stav==="zapnuto") obsah=`<p><b class="up">✓ Zapnuto na tomhle zařízení.</b></p><div class="btns"><button class="btn small ghost" id="n-push-test">Poslat zkušební upozornění</button><button class="btn small ghost" id="n-push-off">Vypnout</button></div>`;
+  else obsah='<div class="btns"><button class="btn small" id="n-push-on">Zapnout upozornění</button></div>';
+  return `<h2>Upozornění</h2><div class="panel"><p class="hint">${co} Zapíná se zvlášť na každém zařízení.</p>${obsah}</div>`;
+}
+
 async function api(cesta,telo,metoda){
   const r=await fetch(S.server.replace(/\/+$/,"")+cesta,{method:metoda||(telo?"POST":"GET"),headers:{"authorization":"Bearer "+S.kod,"content-type":"application/json"},body:telo?JSON.stringify(telo):undefined,cache:"no-store"});
   const j=await r.json().catch(()=>({chyba:"HTTP "+r.status}));
@@ -444,6 +487,7 @@ async function start(){
   const pref=await metaGet("prefs"); if(pref){Object.assign(S.mer,{cls:pref.cls||"",d:pref.d||"d60"});}
   await nactiPamet();
   await zkusOdemknout();
+  if(location.hash==="#rekordy"){S.tab="rekordy";history.replaceState(null,"",location.pathname);}
   if(!S.ja||!KEY) S.tab="nastaveni";
   renderTabs(); render();
   if(S.server&&S.kod){
@@ -874,7 +918,8 @@ function renderNastaveni(){
       <div class="row" style="margin-top:10px"><label class="f">Jméno nového učitele<input type="text" id="n-uc-jm" placeholder="Kateřina Kultová"></label></div>
       <div class="btns"><button class="btn small" id="n-uc-add">Přidat a vytvořit kód</button></div>
       </div>`:"";
-  const export_=S.ja&&KEY?`<h2>Data</h2><div class="panel"><p class="hint">Všechny výkony se jmény do tabulky (CSV pro Excel).</p><div class="btns"><button class="btn small ghost" id="n-export">Stáhnout výkony</button><button class="btn small ghost" id="n-sync">Synchronizovat teď</button></div></div>`:"";
+  if(S.ja&&KEY&&PUSH.stav==="?") pushZjisti().then(()=>{if(S.tab==="nastaveni") render();});
+  const export_=S.ja&&KEY?pushPanel()+`<h2>Data</h2><div class="panel"><p class="hint">Všechny výkony se jmény do tabulky (CSV pro Excel).</p><div class="btns"><button class="btn small ghost" id="n-export">Stáhnout výkony</button><button class="btn small ghost" id="n-sync">Synchronizovat teď</button></div></div>`:"";
   const ucet=S.ja?`<h2>Účet</h2><div class="panel"><p>Přihlášen: <b>${esc(S.ja.jmeno)}</b>${spr?" (správce)":""}</p><p class="hint num">Verze ${VERZE}${S.syncChyba?` · ${esc(S.syncChyba)}`:""}</p><div class="btns"><button class="btn small ghost" id="n-logout">Odhlásit z tohoto zařízení</button></div></div>`:"";
   $("#main").innerHTML=`<h1>Nastavení</h1>${krok||""}${sprava}${export_}${ucet}
     ${!S.ja?`<p class="hint" style="margin-top:14px">Appku si přidej na plochu: v Safari Sdílet a Přidat na plochu, v Chromu na Androidu menu a Přidat na plochu.</p>`:""}`;
@@ -1279,6 +1324,9 @@ M.addEventListener("click",async e=>{
   else if(t.id==="n-rek-ok") await ulozitRekordy();
   else if(t.id==="n-vyk-ok") await ulozitVykony();
   else if(t.id==="n-export") exportCSV();
+  else if(t.id==="n-push-on") await pushZapnout();
+  else if(t.id==="n-push-off") await pushVypnout();
+  else if(t.id==="n-push-test"){await api("/push/test",{endpoint:PUSH.endpoint});toast("Odesláno, za chvilku by mělo přijít.");}
   else if(t.id==="n-sync"){await syncNow();toast(S.syncStav==="ok"?"Synchronizováno.":"Synchronizace selhala: "+S.syncChyba);}
   else if(t.id==="n-uc-load"){await nactiUcitele();render();}
   else if(t.id==="n-uc-add"){const jm=$("#n-uc-jm").value.trim();if(!jm){toast("Napiš jméno.");return;}const k=await novyKodData();const r=await api("/ucitele",{akce:"pridat",jmeno:jm,kod_hash:k.kod_hash,kod_enc:k.kod_enc});S.sprava.kody[r.id]=k.kod;await nactiUcitele();render();toast("Učitel přidán, kód je u jeho jména.");}

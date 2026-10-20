@@ -1,4 +1,4 @@
-const CACHE = "rekordnik-v1.4.3";
+const CACHE = "rekordnik-v1.5.0";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -41,4 +41,21 @@ self.addEventListener("fetch", (e) => {
       return hit || zeSite;
     })
   );
+});
+
+// Upozornění: zpráva přichází zašifrovaná ze serveru, zobrazí se a klepnutí otevře appku na záložce Rekordy.
+self.addEventListener("push", (e) => {
+  let z = {};
+  try { z = e.data ? e.data.json() : {}; } catch (_) { z = { body: e.data ? e.data.text() : "" }; }
+  e.waitUntil(self.registration.showNotification(z.title || "Rekordník", {
+    body: z.body || "", tag: z.tag || undefined, icon: "icon-180.png", badge: "icon-180.png", data: { url: z.url || "./" }
+  }));
+});
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const cil = (e.notification.data && e.notification.data.url) || "./";
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((okna) => {
+    for (const o of okna) if ("focus" in o) { o.navigate(cil).catch(() => {}); return o.focus(); }
+    return self.clients.openWindow(cil);
+  }));
 });

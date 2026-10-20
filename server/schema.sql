@@ -30,3 +30,17 @@ CREATE TABLE IF NOT EXISTS ucitele (
   aktivni   INTEGER NOT NULL DEFAULT 1,
   vytvoreno INTEGER NOT NULL DEFAULT 0
 );
+
+-- Upozornění (Web Push). Worker tabulky založí sám, tady jsou pro přehled.
+CREATE TABLE IF NOT EXISTS push (
+  endpoint  TEXT PRIMARY KEY,   -- adresa služby upozornění v telefonu
+  ucitel    TEXT NOT NULL,      -- id učitele z tabulky ucitele
+  spravce   INTEGER NOT NULL DEFAULT 0,
+  p256dh    TEXT NOT NULL,
+  auth      TEXT NOT NULL,
+  vytvoreno INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS nastaveni (
+  k TEXT PRIMARY KEY,           -- 'vapid' = klíče serveru pro upozornění
+  v TEXT NOT NULL
+);
