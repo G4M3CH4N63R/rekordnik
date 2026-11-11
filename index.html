@@ -175,6 +175,35 @@ nav.tabs button[aria-current="page"]{color:#fff;background:var(--track)}
 @media (max-width:600px){.lane{width:32px;height:38px;font-size:18px}.lanes{gap:5px}.lanes .lbl{display:none}.grid{grid-template-columns:1fr}.fresh{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px}.fcard{flex:0 0 170px;scroll-snap-align:start}.syncdot span{display:none}}
 @media (min-width:601px){.controls{position:sticky;top:0;z-index:4}}
 @media (prefers-reduced-motion:no-preference){.toast{animation:pop .2s ease-out}@keyframes pop{from{opacity:0;transform:translate(-50%,8px)}}.card,.fcard,.lane{transition:border-color .15s}}
+/* stopky */
+.stw{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.stw-c{background:var(--bg);width:100%;max-width:560px;height:100%;max-height:900px;overflow-y:auto;overscroll-behavior:contain;border-radius:12px 12px 0 0;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px))}
+@media (min-width:601px){.stw{align-items:center}.stw-c{height:auto;max-height:92vh;border-radius:12px}}
+.stw-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.stw-h h2{margin:4px 0 2px}
+.stw-cas{font-family:var(--display);font-size:68px;font-weight:700;text-align:center;line-height:1;padding:14px 0 16px;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.stw-hl{display:block;width:100%;height:120px;border:0;border-radius:10px;background:var(--accent);color:var(--on-accent);font-family:var(--display);font-size:36px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.stw-hl[data-stav="bezi"]{background:var(--gold);color:#fff}
+.stw-hl:active{filter:brightness(.9)}
+.stw-hl:disabled{opacity:.4;cursor:default}
+.btns.two>*{flex:1 1 0}
+.stw .k{margin:18px 0 6px}
+.stw-row{all:unset;box-sizing:border-box;display:grid;grid-template-columns:32px 92px 1fr;gap:8px;align-items:center;width:100%;padding:9px 14px;border-top:1px dashed var(--line);cursor:pointer}
+.stw-row:first-child{border-top:0}
+.stw-row .n{color:var(--muted);font-size:13px}
+.stw-row .c{font-family:var(--display);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.stw-row .j{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.stw-row .j.nic{color:var(--muted);font-weight:500}
+.stw-row.dalsi{background:var(--accent-soft)}
+.stw-row.dalsi .j.nic{color:var(--accent);font-weight:600}
+.stw-row.pouzito{opacity:.5}
+.stw-row:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.stw-chips{display:flex;flex-wrap:wrap;gap:6px}
+.stw-chip{font:inherit;font-size:15px;font-weight:600;padding:9px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);cursor:pointer;touch-action:manipulation}
+.stw-chip:disabled{opacity:.45;cursor:default}
+.stw-chip small{font-weight:500;color:var(--muted)}
+.btn-stopky{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px}
+.btn-stopky svg{width:20px;height:20px}
 </style>
 </head>
 <body>
@@ -192,6 +221,22 @@ nav.tabs button[aria-current="page"]{color:#fff;background:var(--track)}
 </div>
 <nav class="tabs" aria-label="Hlavní menu" id="nav"><div class="in" id="tabs"></div></nav>
 <div class="toast" id="toast" hidden></div>
+<div class="stw" id="stw" hidden>
+  <div class="stw-c" role="dialog" aria-modal="true" aria-labelledby="stwT">
+    <div class="stw-h">
+      <div style="min-width:0"><h2 id="stwT">Stopky</h2><div class="hint" id="stwSub"></div></div>
+      <button class="btn ghost small" id="stwX" type="button">Zavřít</button>
+    </div>
+    <div class="stw-cas" id="stwCas">0:00,00</div>
+    <button class="stw-hl" id="stwHl" type="button" data-stav="start">Start</button>
+    <div class="btns two"><button class="btn ghost" id="stwZpet" type="button" disabled>Smazat poslední čas</button><button class="btn ghost" id="stwStop" type="button" disabled>Zastavit</button></div>
+    <div class="k" id="stwCasyT">Časy</div>
+    <div class="lb" id="stwCasy"></div>
+    <div id="stwZaciBox" hidden><div class="k">Klepej jména v pořadí doběhu</div><div class="stw-chips" id="stwZaci"></div></div>
+    <div class="btns" id="stwZapBox"><button class="btn" id="stwZapsat" type="button" disabled style="flex:1">Zapsat časy</button></div>
+    <p class="hint" id="stwHint" style="margin-top:10px"></p>
+  </div>
+</div>
 <div class="upd" id="upd" hidden><span>Je k dispozici nová verze.</span><button id="updBtn">Načíst</button></div>
 
 <script>
@@ -200,7 +245,7 @@ nav.tabs button[aria-current="page"]{color:#fff;background:var(--track)}
    Rekordník · společná evidence výkonů v TV, ZŠ Mendelova
    Verze se zvyšuje spolu s CACHE v sw.js.
    ========================================================================== */
-const VERZE = "1.5.0";
+const VERZE = "1.6.0";
 // Adresa Workeru po nasazení. Prázdná = zadává se v Nastavení.
 const VYCHOZI_SERVER = "https://rekordnik.chuanito-bonito.workers.dev";
 
@@ -582,6 +627,7 @@ function renderMereni(){
       <label class="f">Datum<input type="date" id="m-date" value="${st.date}" max="${dnes()}"></label>
     </div>
     <div style="margin-top:12px">${recCard(g,st.d,"školní rekord "+g+". ročníku",(D.low?"Lepší je menší čas.":"Lepší je větší hodnota.")+" "+(D.u==="min"?"Zapisuj jako minuty:sekundy, třeba 1:13,5.":D.u==="cm"?"Zapisuj v centimetrech, 2,05 appka převede na 205 cm.":""))}</div>
+    ${D.low?`<button class="btn ghost btn-stopky" id="m-stopky" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M10 3h4M18.5 6.5l1.5-1.5"/></svg>Měřit stopkami</button>`:""}
     ${hotovoH()}
     <div class="list">${rows||'<div class="empty">Ve třídě nejsou žáci.</div>'}</div>
     <div class="savebar"><span class="hint num" id="m-cnt">${filled} ${plural(filled,"výkon","výkony","výkonů")} k uložení</span><button class="btn" id="m-save"${filled?"":" disabled"}>Uložit</button></div>
@@ -643,6 +689,7 @@ function renderStafeta(g,tridy){
     ${smis?"":`<div style="margin-top:12px" class="seg" role="group" aria-label="Štafeta"><button data-stsex="M" aria-pressed="${sta.sex==="M"}">Kluci</button><button data-stsex="F" aria-pressed="${sta.sex==="F"}">Holky</button></div>`}
     <div class="panel" style="margin-top:12px"><div class="row">${[0,1,2,3].map(sel).join("")}</div>
       <div class="row" style="margin-top:10px;align-items:flex-end"><label class="f">Čas štafety<input class="inp" style="width:100%" id="st-cas" inputmode="decimal" autocomplete="off" placeholder="38,40" value="${esc(sta.cas)}"></label></div>
+      <button class="btn ghost btn-stopky" id="m-stopky" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M10 3h4M18.5 6.5l1.5-1.5"/></svg>${ST.casy.length&&ST.klic===S.mer.cls+"|sta"?"Stopky: vybrat naměřený čas":"Měřit stopkami"}</button>
       <div class="chips" id="st-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${stafetaChips(g)}</div>
       <div class="btns"><button class="btn" id="st-save"${plna&&v!=null&&!isNaN(v)?"":" disabled"}>Uložit štafetu</button></div>
       ${sta.cl.some(Boolean)&&new Set(sta.cl.filter(Boolean)).size<sta.cl.filter(Boolean).length?'<p class="hint err">Jeden žák je ve štafetě dvakrát.</p>':""}</div>
@@ -1299,6 +1346,7 @@ M.addEventListener("click",async e=>{
   try{
   if(t.id==="m-save") await saveMereni();
   else if(t.id==="st-save") await saveStafeta();
+  else if(t.id==="m-stopky") stOtevrit();
   else if(t.id==="st-ok"){S.mer.sta.ok=true;$("#st-chips").innerHTML=stafetaChips(parseInt(S.mer.cls));}
   else if(t.dataset.stsex){S.mer.sta.sex=t.dataset.stsex;S.mer.sta.cl=["","","",""];render();}
   else if(t.dataset.okv){S.mer.ok.add(t.dataset.okv);updateRow(t.dataset.okv);}
@@ -1337,6 +1385,128 @@ M.addEventListener("click",async e=>{
   else if(t.dataset.ucmsg){const txt=zpravaKolegovi(S.sprava.kody[t.dataset.ucmsg]);try{await navigator.clipboard.writeText(txt);toast("Zpráva zkopírovaná.");}catch(_){toast("Kopírování nejde, opiš kód ručně.");}}
   }catch(err){toast(err.message||String(err));}
 });
+
+/* ---------- stopky (stejně jako ve Cvičce) ---------- */
+// Jednotlivci: Start, při každém doběhu Cíl, pak se k časům v pořadí klepou jména a Zapsat je dá do polí.
+// Štafeta: Cíl za každou štafetu v běhu, pak se klepnutím vybere čas pro právě vyplněnou štafetu.
+// Čas se měří přes Date.now(), takže sedí i po krátkém přepnutí appky do pozadí.
+const ST={bezi:false,start:0,konec:0,casy:[],kdo:[],pouzito:[],raf:0,zobrazeno:"",wake:null,klic:"",d:"d60"};
+// zbytek se usekne, takže zapsaný čas je ten, který byl vidět (u minut na desetiny jako v appce)
+function stSek(ms,d){return DISC[d].u==="min"?Math.floor(ms/100+1e-9)/10:Math.floor(ms/10+1e-9)/100;}
+function stText(sek,d){
+  if(DISC[d].u==="min"){const m=Math.floor(sek/60),r=Math.round((sek-m*60)*10)/10;return m+":"+cz(r.toFixed(1).padStart(4,"0"));}
+  return cz(sek.toFixed(2));
+}
+function stDisplej(ms){const c=Math.floor(ms/10),m=Math.floor(c/6000),s=Math.floor((c%6000)/100),st=c%100;return m+":"+String(s).padStart(2,"0")+","+String(st).padStart(2,"0");}
+function stTik(){if(!ST.bezi)return;const t=stDisplej(Date.now()-ST.start);if(t!==ST.zobrazeno){ST.zobrazeno=t;$("#stwCas").textContent=t;}ST.raf=requestAnimationFrame(stTik);}
+async function stWake(on){try{if(on&&!ST.wake&&navigator.wakeLock) ST.wake=await navigator.wakeLock.request("screen");if(!on&&ST.wake){const w=ST.wake;ST.wake=null;await w.release();}}catch(_){ST.wake=null;}}
+function stReset(){cancelAnimationFrame(ST.raf);Object.assign(ST,{bezi:false,start:0,konec:0,casy:[],kdo:[],pouzito:[],zobrazeno:""});$("#stwCas").textContent=stDisplej(0);stWake(false);}
+const stStafeta=()=>ST.d==="sta";
+function stOtevrit(){
+  const st=S.mer, g=parseInt(st.cls), klic=st.cls+"|"+st.d;
+  if(ST.klic!==klic){stReset();ST.klic=klic;ST.d=st.d;}
+  $("#stwSub").textContent=dn(st.d,g)+" · "+st.cls+(st.d==="sta"&&g>5?(st.sta.sex==="M"?" kluci":" holky"):"");
+  $("#stwHint").textContent=stStafeta()
+    ?"Můžeš měřit víc štafet najednou: Cíl klepni za každou. Pak u každé štafety vyber běžce a tady klepni na její čas. Časy zůstanou, dokud běh nezahodíš."
+    :"Časy se zapíšou do polí u jmen, uloží se až tlačítkem Uložit. Když už má žák v poli lepší čas, zůstane. Jméno u času zrušíš klepnutím na řádek."+(DISC[st.d].u==="min"?" U minut se zapisuje na desetiny.":"");
+  $("#stw").hidden=false; document.body.style.overflow="hidden";
+  stKresli();
+}
+function stZavrit(){
+  if($("#stw").hidden) return;
+  if(!stStafeta()&&!ST.bezi&&ST.kdo.some(Boolean)&&!confirm("Přiřazené časy nejsou zapsané. Zavřít a zahodit je?")) return;
+  if(ST.bezi&&!confirm("Stopky běží. Zastavit a zavřít?")) return;
+  if(ST.bezi) stZastavit();
+  if(!stStafeta()) stReset();
+  $("#stw").hidden=true; document.body.style.overflow="";
+  if(S.tab==="mereni") render();
+}
+function stZaci(){return S.mer?zaciTridy(S.mer.cls):[];}
+function stKresli(){
+  const hl=$("#stwHl"), staf=stStafeta(), d=ST.d;
+  hl.dataset.stav=ST.bezi?"bezi":(ST.casy.length?"stop":"start");
+  hl.textContent=ST.bezi?"Cíl"+(ST.casy.length?" ("+(ST.casy.length+1)+".)":""):(ST.casy.length?"Zastaveno":"Start");
+  hl.disabled=!ST.bezi&&ST.casy.length>0;
+  $("#stwStop").disabled=!ST.bezi&&!ST.casy.length;
+  $("#stwStop").textContent=ST.bezi||!ST.casy.length?"Zastavit":"Zahodit běh";
+  $("#stwZpet").disabled=!ST.casy.length;
+  $("#stwCasyT").textContent=ST.casy.length?"Časy ("+ST.casy.length+")":"Časy";
+  const box=$("#stwCasy"); box.innerHTML="";
+  if(!ST.casy.length) box.innerHTML=`<div class="empty">Start spustí čas. Při každém doběhu${staf?" štafety":""} klepni na Cíl.</div>`;
+  const prvni=ST.kdo.findIndex(x=>!x);
+  ST.casy.forEach((ms,i)=>{
+    const c=stText(stSek(ms,d),d);
+    const r=document.createElement("button"); r.type="button";
+    if(staf){
+      r.className="stw-row"+(ST.pouzito[i]?" pouzito":"");
+      r.innerHTML=`<span class="n">${i+1}.</span><span class="c">${c}</span><span class="j${ST.bezi?" nic":""}">${ST.bezi?"až po zastavení":ST.pouzito[i]?"použito, klepni znovu":"použít pro tuhle štafetu"}</span>`;
+      r.disabled=ST.bezi;
+      r.addEventListener("click",()=>{if(ST.bezi)return;ST.pouzito[i]=true;S.mer.sta.cas=c;S.mer.sta.ok=false;$("#stw").hidden=true;document.body.style.overflow="";render();toast("Čas "+c+" je v poli Čas štafety.");});
+    }else{
+      const z=ST.kdo[i]&&S.zaci.get(ST.kdo[i]);
+      r.className="stw-row"+(i===prvni?" dalsi":"");
+      r.innerHTML=`<span class="n">${i+1}.</span><span class="c">${c}</span><span class="j${z?"":" nic"}">${z?esc(jmeno(z)):(i===prvni?"← klepni jméno":"bez jména")}</span>`;
+      r.setAttribute("aria-label",(i+1)+". čas "+c+(z?", "+jmeno(z)+", klepnutím zrušíš":", bez jména"));
+      r.addEventListener("click",()=>{if(ST.kdo[i]){ST.kdo[i]=null;stKresli();}});
+    }
+    box.appendChild(r);
+  });
+  $("#stwZaciBox").hidden=staf||!ST.casy.length;
+  $("#stwZapBox").hidden=staf;
+  if(!staf){
+    const zb=$("#stwZaci"); zb.innerHTML="";
+    const prir=new Set(ST.kdo.filter(Boolean));
+    stZaci().filter(z=>!prir.has(z.id)).forEach(z=>{
+      const b=document.createElement("button"); b.type="button"; b.className="stw-chip";
+      const ma=(S.mer.inp[z.id]||"").trim();
+      b.innerHTML=`<span class="sx ${z.sex}"></span>${esc(jmeno(z))}${ma?` <small>· ${esc(ma)}</small>`:""}`;
+      b.disabled=prvni<0;
+      b.addEventListener("click",()=>{const i=ST.kdo.findIndex(x=>!x);if(i<0)return;ST.kdo[i]=z.id;stKresli();});
+      zb.appendChild(b);
+    });
+    const n=ST.kdo.filter(Boolean).length;
+    $("#stwZapsat").disabled=ST.bezi||!n;
+    $("#stwZapsat").textContent=ST.bezi&&n?"Nejdřív zastav stopky":n?"Zapsat "+n+" "+plural(n,"čas","časy","časů")+" do polí":"Zapsat časy";
+  }
+}
+function stHlavni(){
+  const ted=Date.now();
+  if(!ST.bezi&&ST.casy.length) return;
+  if(!ST.bezi){ST.bezi=true;ST.start=ted;stWake(true);ST.raf=requestAnimationFrame(stTik);}
+  else{ST.casy.push(ted-ST.start);ST.kdo.push(null);ST.pouzito.push(false);if(navigator.vibrate) navigator.vibrate(15);}
+  stKresli();
+}
+function stZastavit(){
+  if(!ST.bezi){if(ST.casy.length&&confirm("Zahodit tenhle běh i s časy?")){stReset();stKresli();}return;}
+  ST.bezi=false; ST.konec=Date.now()-ST.start; cancelAnimationFrame(ST.raf);
+  $("#stwCas").textContent=stDisplej(ST.konec); stWake(false);
+  if(!ST.casy.length) stReset();
+  stKresli();
+}
+function stZpet(){if(!ST.casy.length)return;ST.casy.pop();ST.kdo.pop();ST.pouzito.pop();if(!ST.bezi&&!ST.casy.length) stReset();stKresli();}
+function stZapsat(){
+  if(ST.bezi||stStafeta()) return;
+  const bez=ST.kdo.filter(x=>!x).length;
+  if(bez&&!confirm(bez+" "+plural(bez,"čas nemá","časy nemají","časů nemá")+" jméno a zahodí se. Zapsat ostatní?")) return;
+  const st=S.mer, d=ST.d; let n=0, lepsi=0;
+  ST.casy.forEach((ms,i)=>{
+    const id=ST.kdo[i]; if(!id) return;
+    const sek=stSek(ms,d), dosud=parseVal(st.inp[id]||"",d);
+    if(dosud!=null&&!isNaN(dosud)&&dosud<=sek){lepsi++;return;}
+    st.inp[id]=stText(sek,d); st.ok.delete(id); n++;
+  });
+  st.hotovo=null;
+  stReset(); $("#stw").hidden=true; document.body.style.overflow="";
+  render();
+  toast(n+" "+plural(n,"čas je","časy jsou","časů je")+" v polích"+(lepsi?", u "+lepsi+" zůstal lepší čas":"")+". Zkontroluj a ulož.");
+}
+$("#stwHl").addEventListener("pointerdown",e=>{if(e.button===0){e.preventDefault();stHlavni();}});
+$("#stwHl").addEventListener("click",e=>{if(e.detail===0) stHlavni();});
+$("#stwStop").addEventListener("click",stZastavit);
+$("#stwZpet").addEventListener("click",stZpet);
+$("#stwZapsat").addEventListener("click",stZapsat);
+$("#stwX").addEventListener("click",stZavrit);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#stw").hidden) stZavrit();});
 
 /* ---------- service worker a aktualizace ---------- */
 let _reg=null;
